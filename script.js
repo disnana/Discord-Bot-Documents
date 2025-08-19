@@ -394,7 +394,7 @@ function collapseAllDetails() {
     console.log('全て折りたたみ完了');
 }
 
-// ========== 残りの機能（前回と同じ） ==========
+// ========== 読み込み（統合版） ==========
 async function loadCommands() {
     const elements = getElements();
     
@@ -413,11 +413,18 @@ async function loadCommands() {
         const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
         elements.commandsContainerMobile.innerHTML = mobileCards;
         
+        // フィルタボタンを作成（アイコン修正版）
         createFilterButtons();
+        
+        // トグル機能を設定
         setupToggleHandlers();
         
         elements.commandCount.textContent = `全 ${allCommands.length} コマンド`;
-        console.log('フィルタ統合版でコマンド読み込み完了:', allCommands.length);
+        console.log('修正版でコマンド読み込み完了:', allCommands.length);
+        
+        // デバッグ関数をグローバルに設定
+        window.debugCurrentState = debugCurrentState;
+        
     } catch (error) {
         console.error('エラー:', error);
     }
@@ -510,6 +517,28 @@ function setupEventListeners() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 }
+
+// ========== デバッグ関数 ==========
+function debugCurrentState() {
+    console.log('=== 現在の状態 ===');
+    console.log('現在のフィルタ:', currentFilter);
+    console.log('検索語:', getElements().searchInput.value);
+    console.log('検索モード:', searchMode);
+    
+    const visible = document.querySelectorAll('.command-card-wrapper[style*="display: block"], .command-card-wrapper:not([style*="display: none"])');
+    const hidden = document.querySelectorAll('.command-card-wrapper[style*="display: none"]');
+    
+    console.log('表示中のカード:', visible.length);
+    console.log('非表示のカード:', hidden.length);
+    
+    // カテゴリボタンの状態確認
+    const activeButton = document.querySelector('.filter-btn.bg-discord');
+    console.log('アクティブなフィルタボタン:', activeButton ? activeButton.textContent.trim() : 'なし');
+}
+
+// F12コンソールで debugCurrentState() を実行してデバッグ可能
+window.debugCurrentState = debugCurrentState;
+
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('フィルタ統合版 初期化開始...');
