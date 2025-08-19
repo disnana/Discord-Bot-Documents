@@ -223,14 +223,6 @@ function applyFilterAndSearch() {
     const commandWrappers = document.querySelectorAll('.command-card-wrapper');
     let visibleCards = 0;
 
-    console.log('フィルタ適用開始:', {
-        currentFilter: currentFilter,
-        searchTerm: searchTerm,
-        searchTermLength: searchTerm.length,
-        searchMode: searchMode,
-        totalCards: commandWrappers.length
-    });
-
     commandWrappers.forEach((wrapper, index) => {
         const card = wrapper.querySelector('.command-card');
         if (!card) {
@@ -268,45 +260,14 @@ function applyFilterAndSearch() {
         } else {
             wrapper.style.display = 'none';
         }
-        
-        // デバッグログ（最初の数件のみ）
-        if (index < 3) {
-            console.log(`カード ${index}:`, {
-                name: commandName,
-                category: commandCategory,
-                searchTerm: searchTerm,
-                passesFilter: passesFilter,
-                passesSearch: passesSearch,
-                shouldShow: shouldShow
-            });
-        }
     });
 
     elements.noResults.style.display = visibleCards === 0 ? 'block' : 'none';
-    
-    console.log('フィルタ適用完了:', {
-        visibleCards: visibleCards,
-        totalCards: commandWrappers.length,
-        searchTermEmpty: searchTerm.length === 0
-    });
 }
 // ========== 検索機能（リセット対応版） ==========
 function performSearch() {
     const elements = getElements();
     const searchTerm = elements.searchInput.value.trim();
-    
-    console.log('検索実行:', {
-        searchTerm: searchTerm,
-        searchTermEmpty: searchTerm.length === 0,
-        currentFilter: currentFilter,
-        searchMode: searchMode
-    });
-    
-    // 検索ワードが空になった場合の特別処理
-    if (searchTerm.length === 0) {
-        console.log('検索ワードが空 - フィルタのみ適用');
-    }
-    
     applyFilterAndSearch();
 }
 
@@ -317,7 +278,6 @@ function debouncedSearch() {
     // 検索ワードが空の場合は即座に実行（遅延なし）
     const searchTerm = getElements().searchInput.value.trim();
     if (searchTerm.length === 0) {
-        console.log('検索ワード削除 - 即座にリセット');
         performSearch();
     } else {
         // 検索ワードがある場合は通常の遅延
@@ -344,8 +304,6 @@ function filterCommands(category, clickedButton) {
         clickedButton.classList.remove('bg-gray-200', 'text-gray-700');
         clickedButton.classList.add('bg-discord', 'text-white');
     }
-
-    console.log('フィルタ変更:', previousFilter, '->', category);
     
     // 統合フィルタ+検索を適用
     applyFilterAndSearch();
@@ -370,8 +328,6 @@ function toggleSearchMode(mode) {
         elements.nameSearchBtn.classList.add('text-white');
         elements.searchInput.placeholder = '全文検索...';
     }
-    
-    console.log('検索モード変更:', previousMode, '->', mode);
     
     // 検索モード変更時も再検索を実行
     if (elements.searchInput.value.trim()) {
@@ -398,7 +354,6 @@ function expandAllDetails() {
             if (mobileIcon) mobileIcon.style.transform = 'rotate(180deg)';
         }
     });
-    console.log('全て展開完了');
 }
 
 function collapseAllDetails() {
@@ -417,10 +372,7 @@ function collapseAllDetails() {
             if (mobileIcon) mobileIcon.style.transform = 'rotate(0deg)';
         }
     });
-    console.log('全て折りたたみ完了');
 }
-
-// ========== 読み込み（統合版） ==========
 
 // ========== 読み込み（「全て」ボタン対応版） ==========
 async function loadCommands() {
@@ -451,7 +403,6 @@ async function loadCommands() {
         setupToggleHandlers();
         
         elements.commandCount.textContent = `全 ${allCommands.length} コマンド`;
-        console.log('「全て」ボタン対応版でコマンド読み込み完了:', allCommands.length);
         
         // 初期表示を確実に実行
         applyFilterAndSearch();
@@ -477,7 +428,6 @@ function setupToggleHandlers() {
             mobileButton.onclick = createIndependentToggle(`mobile_details_${index}`, `mobile_icon_${index}`);
         }
     });
-    console.log('トグル機能設定完了');
 }
 
 async function loadCommandsData() {
@@ -522,7 +472,6 @@ function createFilterButtons() {
         filterCommands('all', allButton);
     };
     elements.filterButtons.appendChild(allButton);
-    console.log('「全て」フィルタボタン作成');
     
     // 各カテゴリのボタンを作成
     categories.forEach(category => {
@@ -540,7 +489,6 @@ function createFilterButtons() {
             };
             
             elements.filterButtons.appendChild(button);
-            console.log(`フィルタボタン作成: ${category} - ${config.icon}`);
         }
     });
 }
@@ -569,8 +517,6 @@ function setupEventListeners() {
     backToTopBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
-    
-    console.log('イベントリスナー設定完了（検索リセット対応版）');
 }
 
 // ========== 検索入力イベントの改良 ==========
@@ -580,7 +526,6 @@ function setupSearchInputListener() {
     // 入力イベント
     elements.searchInput.addEventListener('input', function(e) {
         const currentValue = e.target.value;
-        console.log('検索入力変更:', `"${currentValue}"`);
         debouncedSearch();
     });
     
@@ -588,7 +533,6 @@ function setupSearchInputListener() {
     elements.searchInput.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             e.target.value = '';
-            console.log('Escapeキーで検索クリア');
             performSearch(); // 即座に実行
         }
     });
@@ -599,39 +543,13 @@ function debugCurrentState() {
     const elements = getElements();
     const searchTerm = elements.searchInput.value;
     
-    console.log('=== 現在の状態 ===');
-    console.log('現在のフィルタ:', currentFilter);
-    console.log('検索語:', `"${searchTerm}"`);
-    console.log('検索語の長さ:', searchTerm.length);
-    console.log('検索語は空:', searchTerm.trim().length === 0);
-    console.log('検索モード:', searchMode);
-    
     // フィルタボタンの状態確認
     const allButton = document.querySelector('.filter-btn[data-category="all"]');
     const activeButton = document.querySelector('.filter-btn.bg-discord');
     
-    console.log('「全て」ボタン存在:', !!allButton);
-    console.log('「全て」ボタンアクティブ:', allButton && allButton.classList.contains('bg-discord'));
-    console.log('アクティブなフィルタボタン:', activeButton ? activeButton.textContent.trim() : 'なし');
-    
     const wrappers = document.querySelectorAll('.command-card-wrapper');
     const visible = Array.from(wrappers).filter(w => w.style.display !== 'none');
     const hidden = Array.from(wrappers).filter(w => w.style.display === 'none');
-    
-    console.log('全カード数:', wrappers.length);
-    console.log('表示中のカード:', visible.length);
-    console.log('非表示のカード:', hidden.length);
-    
-    // 表示中のカードの詳細
-    if (visible.length > 0 && visible.length <= 10) {
-        console.log('表示中のカード一覧:');
-        visible.forEach(wrapper => {
-            const card = wrapper.querySelector('.command-card');
-            if (card) {
-                console.log(`  - ${card.dataset.command} (${card.dataset.category})`);
-            }
-        });
-    }
 }
 
 // F12コンソールで debugCurrentState() を実行してデバッグ可能
@@ -640,8 +558,6 @@ window.debugCurrentState = debugCurrentState;
 // ========== 手動リセット機能 ==========
 function resetFiltersAndSearch() {
     const elements = getElements();
-    
-    console.log('手動リセット実行');
     
     // 検索ワードをクリア
     elements.searchInput.value = '';
@@ -664,7 +580,6 @@ function resetFiltersAndSearch() {
     // 表示を更新
     applyFilterAndSearch();
     
-    console.log('リセット完了 - 全てのコマンドが表示されるはずです');
 }
 
 // ========== 初期フィルタ状態の設定 ==========
@@ -677,21 +592,10 @@ function setInitialFilterState() {
         allButton.classList.add('bg-discord', 'text-white');
         allButton.classList.remove('bg-gray-200', 'text-gray-700');
     }
-    
-    console.log('初期フィルタ状態設定: 全て');
 }
 
 // ========== 初期化（デバッグ機能付き） ==========
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('検索リセット対応版 初期化開始...');
     setupEventListeners();
     loadCommands();
-    
-    // グローバルデバッグ関数を設定
-    window.debugCurrentState = debugCurrentState;
-    window.resetFiltersAndSearch = resetFiltersAndSearch;
-    
-    console.log('デバッグ機能が利用可能です:');
-    console.log('  - debugCurrentState() : 現在の状態を表示');
-    console.log('  - resetFiltersAndSearch() : フィルタと検索を手動リセット');
 });
