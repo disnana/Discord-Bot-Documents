@@ -8,17 +8,7 @@
     transform: translateY(-2px);
 }
 
-.details-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-}
-
-.details-content.expanded {
-    max-height: 2000px;
-    transition: max-height 0.5s ease-in;
-}
-
+/* CSSクラスによる制御を削除し、インラインスタイルのみに依存 */
 .toggle-details {
     cursor: pointer;
 }
@@ -59,7 +49,7 @@
 }
 
 /* フォーカス時のアクセシビリティ */
-.toggle-details:focus {
+.toggle-btn:focus {
     outline: 2px solid #5865F2;
     outline-offset: 2px;
 }
