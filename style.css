@@ -1,4 +1,4 @@
-/* Custom Styles for Disnana Command Reference */
+/* Custom Styles for Disnana Command Reference - Minimal Version */
 
 .command-card {
     transition: all 0.3s ease;
@@ -8,10 +8,7 @@
     transform: translateY(-2px);
 }
 
-/* CSSクラスによる制御を削除し、インラインスタイルのみに依存 */
-.toggle-details {
-    cursor: pointer;
-}
+/* 個別のdetails要素用のスタイル - クラス名を使わない */
 
 /* ローディングアニメーション */
 @keyframes fadeIn {
@@ -49,12 +46,6 @@
 }
 
 /* フォーカス時のアクセシビリティ */
-.toggle-btn:focus {
-    outline: 2px solid #5865F2;
-    outline-offset: 2px;
-}
-
-.filter-btn:focus,
 button:focus {
     outline: 2px solid #5865F2;
     outline-offset: 2px;
