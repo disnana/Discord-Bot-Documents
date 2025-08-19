@@ -94,12 +94,23 @@
         </div>
     </section>
 
-    <!-- Filter Buttons -->
+    <!-- Filter and Control Buttons -->
     <section class="bg-white py-3 sm:py-4 border-b">
         <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-            <div class="flex flex-wrap justify-center gap-2 sm:gap-3" id="filterButtons">
+            <!-- Filter Buttons -->
+            <div class="flex flex-wrap justify-center gap-2 sm:gap-3 mb-3" id="filterButtons">
                 <button onclick="filterCommands('all')" class="filter-btn bg-discord text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors">
                     <i class="fas fa-list mr-1 sm:mr-2"></i>全て
+                </button>
+            </div>
+
+            <!-- Expand/Collapse Controls -->
+            <div class="flex justify-center space-x-2 sm:space-x-3">
+                <button id="expandAllBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors">
+                    <i class="fas fa-expand-alt mr-1 sm:mr-2"></i>全て展開
+                </button>
+                <button id="collapseAllBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors">
+                    <i class="fas fa-compress-alt mr-1 sm:mr-2"></i>全て折りたたみ
                 </button>
             </div>
         </div>
@@ -148,13 +159,13 @@
         </div>
     </footer>
 
-    <!-- Back to Top -->
-    <button id="backToTop" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-discord hover:bg-discord-dark text-white p-2 sm:p-3 rounded-full shadow-lg transition-all opacity-0 pointer-events-none">
+    <!-- Back to Top - 修正済み -->
+    <button id="backToTop" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-discord hover:bg-discord-dark text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg transition-all opacity-0 pointer-events-none flex items-center justify-center">
         <i class="fas fa-arrow-up text-sm sm:text-base"></i>
     </button>
 
     <script>
-        // コマンドデータ
+        // コマンドデータ（前回と同じ）
         const commandsData = {
             "commands": [
                 {
@@ -237,7 +248,7 @@
             ]
         };
 
-        // カテゴリ設定
+        // カテゴリ設定（前回と同じ）
         const categoryConfig = {
             "basic": { color: "blue", icon: "fas fa-info-circle", name: "基本", bgColor: "bg-blue-50", textColor: "text-blue-600", borderColor: "border-blue-200" },
             "test": { color: "green", icon: "fas fa-vial", name: "テスト", bgColor: "bg-green-50", textColor: "text-green-600", borderColor: "border-green-200" },
@@ -254,11 +265,14 @@
         const filterButtons = document.getElementById('filterButtons');
         const nameSearchBtn = document.getElementById('nameSearchBtn');
         const fullSearchBtn = document.getElementById('fullSearchBtn');
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const collapseAllBtn = document.getElementById('collapseAllBtn');
 
-        let searchMode = 'name'; // 'name' or 'full'
+        let searchMode = 'name';
         let allCommands = [];
+        let searchTimeout = null; // debounce用
 
-        // デスクトップ用カード作成
+        // カード作成関数（前回と同じなので省略）
         function createDesktopCard(command) {
             const config = categoryConfig[command.category];
 
@@ -328,7 +342,6 @@
             `;
         }
 
-        // モバイル用カード作成
         function createMobileCard(command) {
             const config = categoryConfig[command.category];
 
@@ -396,7 +409,7 @@
             `;
         }
 
-        // カードの詳細表示切り替え
+        // 個別カードの詳細表示切り替え
         function setupToggleHandlers() {
             document.addEventListener('click', function(e) {
                 if (e.target.closest('.toggle-details')) {
@@ -407,6 +420,25 @@
                     details.classList.toggle('expanded');
                     icon.classList.toggle('rotate-180');
                 }
+            });
+        }
+
+        // 全体展開/折りたたみ機能
+        function expandAllDetails() {
+            document.querySelectorAll('.details-content').forEach(details => {
+                details.classList.add('expanded');
+            });
+            document.querySelectorAll('.toggle-details i').forEach(icon => {
+                icon.classList.add('rotate-180');
+            });
+        }
+
+        function collapseAllDetails() {
+            document.querySelectorAll('.details-content').forEach(details => {
+                details.classList.remove('expanded');
+            });
+            document.querySelectorAll('.toggle-details i').forEach(icon => {
+                icon.classList.remove('rotate-180');
             });
         }
 
@@ -428,7 +460,6 @@
         function toggleSearchMode(mode) {
             searchMode = mode;
 
-            // ボタンスタイル更新
             if (mode === 'name') {
                 nameSearchBtn.classList.add('bg-white', 'text-discord');
                 nameSearchBtn.classList.remove('text-white');
@@ -443,13 +474,12 @@
                 searchInput.placeholder = '全文検索...';
             }
 
-            // 検索を再実行
             if (searchInput.value) {
                 performSearch();
             }
         }
 
-        // 検索実行
+        // 検索実行（debounce対応）
         function performSearch() {
             const searchTerm = searchInput.value.toLowerCase();
             const commandCards = document.querySelectorAll('.command-card');
@@ -477,9 +507,14 @@
             noResults.style.display = visibleCards === 0 ? 'block' : 'none';
         }
 
+        // debounce付き検索
+        function debouncedSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(performSearch, 300); // 300ms待機
+        }
+
         // フィルター機能
         function filterCommands(category) {
-            // ボタンスタイル更新
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('bg-discord', 'text-white');
                 btn.classList.add('bg-gray-200', 'text-gray-700');
@@ -488,7 +523,6 @@
             event.target.classList.remove('bg-gray-200', 'text-gray-700');
             event.target.classList.add('bg-discord', 'text-white');
 
-            // カードフィルタリング
             const commandCards = document.querySelectorAll('.command-card');
             let visibleCards = 0;
 
@@ -510,21 +544,15 @@
             loadingMessage.style.display = 'none';
             allCommands = commandsData.commands;
 
-            // フィルターボタン作成
             createFilterButtons();
 
-            // デスクトップ版
             const desktopCards = allCommands.map(command => createDesktopCard(command)).join('');
             commandsContainer.innerHTML = desktopCards;
 
-            // モバイル版
             const mobileCards = allCommands.map(command => createMobileCard(command)).join('');
             commandsContainerMobile.innerHTML = mobileCards;
 
-            // トグルハンドラー設定
             setupToggleHandlers();
-
-            // コマンド数更新
             commandCount.textContent = `全 ${allCommands.length} コマンド`;
         }
 
@@ -534,8 +562,12 @@
             nameSearchBtn.addEventListener('click', () => toggleSearchMode('name'));
             fullSearchBtn.addEventListener('click', () => toggleSearchMode('full'));
 
-            // 検索
-            searchInput.addEventListener('input', performSearch);
+            // 検索（debounce対応）
+            searchInput.addEventListener('input', debouncedSearch);
+
+            // 全体展開/折りたたみ
+            expandAllBtn.addEventListener('click', expandAllDetails);
+            collapseAllBtn.addEventListener('click', collapseAllDetails);
 
             // トップに戻る
             const backToTopBtn = document.getElementById('backToTop');
@@ -550,7 +582,6 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
 
-            // コマンド読み込み
             loadCommands();
         });
     </script>
