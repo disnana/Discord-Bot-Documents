@@ -1,4 +1,4 @@
-// Disnana Command Reference Script - Independent Container Version
+// Disnana Command Reference Script - Height Independent Grid Version
 
 let categoryConfig = {};
 let allCommands = [];
@@ -21,18 +21,18 @@ function getElements() {
     };
 }
 
-// ========== ステップ2: 完全独立したカード作成 ==========
+// ========== ステップ2: 高さ独立カード作成 ==========
 function createDesktopCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const containerId = `desktop_container_${index}`;
+    const wrapperId = `desktop_wrapper_${index}`;
     const detailsId = `desktop_details_${index}`;
     const iconId = `desktop_icon_${index}`;
     const buttonId = `desktop_button_${index}`;
     
     return `
-        <div id="${containerId}" class="command-card-container" style="width: 100%; margin-bottom: 1.5rem;">
+        <div id="${wrapperId}" class="command-card-wrapper">
             <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" 
                  data-category="${command.category}" 
                  data-command="${command.name}">
@@ -66,9 +66,8 @@ function createDesktopCard(command, index) {
                     </div>
                 </div>
                 
-                <!-- 完全独立した詳細セクション -->
-                <div id="${detailsId}" 
-                     style="display: none; width: 100%; box-sizing: border-box; position: relative;">
+                <!-- 高さに影響しない詳細セクション -->
+                <div id="${detailsId}" style="display: none; position: relative; width: 100%;">
                     <div class="p-4 space-y-4">
                         <div>
                             <h4 class="font-semibold text-gray-900 mb-2 text-sm">使用例</h4>
@@ -106,13 +105,13 @@ function createMobileCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const containerId = `mobile_container_${index}`;
+    const wrapperId = `mobile_wrapper_${index}`;
     const detailsId = `mobile_details_${index}`;
     const iconId = `mobile_icon_${index}`;
     const buttonId = `mobile_button_${index}`;
     
     return `
-        <div id="${containerId}" class="command-card-container" style="width: 100%; margin-bottom: 1rem;">
+        <div id="${wrapperId}" class="command-card-wrapper">
             <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" 
                  data-category="${command.category}" 
                  data-command="${command.name}">
@@ -145,9 +144,7 @@ function createMobileCard(command, index) {
                     </div>
                 </div>
                 
-                <!-- 完全独立した詳細セクション -->
-                <div id="${detailsId}" 
-                     style="display: none; width: 100%; box-sizing: border-box; position: relative;">
+                <div id="${detailsId}" style="display: none; position: relative; width: 100%;">
                     <div class="px-3 pb-3 border-t border-gray-100">
                         <div class="pt-3 space-y-3">
                             <div>
@@ -180,7 +177,7 @@ function createMobileCard(command, index) {
     `;
 }
 
-// ========== ステップ3: 完全分離された開閉機能 ==========
+// ========== ステップ3: 完全分離された開閉機能（前回と同じ） ==========
 function createIndependentToggle(detailsId, iconId) {
     return function(event) {
         event.preventDefault();
@@ -223,7 +220,7 @@ function createIndependentToggle(detailsId, iconId) {
     };
 }
 
-// ========== ステップ4: 独立コンテナでの配置 ==========
+// ========== 残りの機能（前回と同じ） ==========
 async function loadCommands() {
     const elements = getElements();
     
@@ -236,21 +233,19 @@ async function loadCommands() {
 
         elements.loadingMessage.style.display = 'none';
         
-        // デスクトップ版: 独立したコンテナを順番に配置
+        // デスクトップ版: 高さ独立のグリッドレイアウト
         const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
         elements.commandsContainer.innerHTML = desktopCards;
-        elements.commandsContainer.style.display = 'block'; // グリッドではなく通常のブロック
         
-        // モバイル版: 独立したコンテナを順番に配置
+        // モバイル版: 通常の縦並び
         const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
         elements.commandsContainerMobile.innerHTML = mobileCards;
-        elements.commandsContainerMobile.style.display = 'block'; // グリッドではなく通常のブロック
         
         createFilterButtons();
         setupToggleHandlers();
         
         elements.commandCount.textContent = `全 ${allCommands.length} コマンド`;
-        console.log('独立コンテナでコマンド読み込み完了:', allCommands.length);
+        console.log('2列グリッド（高さ独立）でコマンド読み込み完了:', allCommands.length);
     } catch (error) {
         console.error('エラー:', error);
     }
@@ -270,10 +265,9 @@ function setupToggleHandlers() {
             mobileButton.onclick = createIndependentToggle(`mobile_details_${index}`, `mobile_icon_${index}`);
         }
     });
-    console.log('独立トグル機能設定完了');
+    console.log('高さ独立トグル機能設定完了');
 }
 
-// ========== ステップ5: 全体開閉機能の実装 ==========
 function expandAllDetails() {
     allCommands.forEach((_, index) => {
         // デスクトップ版
@@ -318,7 +312,7 @@ function collapseAllDetails() {
     console.log('全て折りたたみ完了');
 }
 
-// ========== 他の機能（変更なし） ==========
+// ======== 他の機能は前回と同じなので省略 ========
 async function loadCommandsData() {
     const elements = getElements();
     
@@ -385,26 +379,26 @@ function toggleSearchMode(mode) {
 function performSearch() {
     const elements = getElements();
     const searchTerm = elements.searchInput.value.toLowerCase();
-    const commandContainers = document.querySelectorAll('.command-card-container');
+    const commandWrappers = document.querySelectorAll('.command-card-wrapper');
     let visibleCards = 0;
 
-    commandContainers.forEach(container => {
-        const card = container.querySelector('.command-card');
+    commandWrappers.forEach(wrapper => {
+        const card = wrapper.querySelector('.command-card');
         const commandName = card.dataset.command.toLowerCase();
         let shouldShow = false;
         
         if (searchMode === 'name') {
             shouldShow = commandName.includes(searchTerm);
         } else {
-            const cardText = container.textContent.toLowerCase();
+            const cardText = wrapper.textContent.toLowerCase();
             shouldShow = cardText.includes(searchTerm);
         }
         
         if (shouldShow) {
-            container.style.display = 'block';
+            wrapper.style.display = 'block';
             visibleCards++;
         } else {
-            container.style.display = 'none';
+            wrapper.style.display = 'none';
         }
     });
 
@@ -427,16 +421,16 @@ function filterCommands(category) {
     event.target.classList.remove('bg-gray-200', 'text-gray-700');
     event.target.classList.add('bg-discord', 'text-white');
 
-    const commandContainers = document.querySelectorAll('.command-card-container');
+    const commandWrappers = document.querySelectorAll('.command-card-wrapper');
     let visibleCards = 0;
     
-    commandContainers.forEach(container => {
-        const card = container.querySelector('.command-card');
+    commandWrappers.forEach(wrapper => {
+        const card = wrapper.querySelector('.command-card');
         if (category === 'all' || card.dataset.category === category) {
-            container.style.display = 'block';
+            wrapper.style.display = 'block';
             visibleCards++;
         } else {
-            container.style.display = 'none';
+            wrapper.style.display = 'none';
         }
     });
 
@@ -450,8 +444,6 @@ function setupEventListeners() {
     elements.nameSearchBtn.addEventListener('click', () => toggleSearchMode('name'));
     elements.fullSearchBtn.addEventListener('click', () => toggleSearchMode('full'));
     elements.searchInput.addEventListener('input', debouncedSearch);
-    
-    // 全体開閉機能を実装
     elements.expandAllBtn.addEventListener('click', expandAllDetails);
     elements.collapseAllBtn.addEventListener('click', collapseAllDetails);
     
@@ -469,7 +461,7 @@ function setupEventListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('独立コンテナ版 初期化開始...');
+    console.log('高さ独立2列グリッド版 初期化開始...');
     setupEventListeners();
     loadCommands();
 });
