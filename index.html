@@ -18,100 +18,143 @@
             }
         }
     </script>
+    <style>
+        .command-card {
+            transition: all 0.3s ease;
+        }
+        .command-card:hover {
+            transform: translateY(-2px);
+        }
+        .details-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .details-content.expanded {
+            max-height: 2000px;
+            transition: max-height 0.5s ease-in;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
     <!-- Header -->
     <header class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+            <div class="flex justify-between items-center h-14 sm:h-16">
                 <div class="flex items-center">
-                    <i class="fas fa-robot text-discord text-2xl mr-3"></i>
+                    <i class="fas fa-robot text-discord text-xl sm:text-2xl mr-2 sm:mr-3"></i>
                     <div>
-                        <span class="text-xl font-bold text-gray-900">Disnana</span>
-                        <span class="text-sm text-gray-500 ml-2">コマンドリファレンス</span>
+                        <span class="text-lg sm:text-xl font-bold text-gray-900">Disnana</span>
+                        <span class="text-xs sm:text-sm text-gray-500 ml-1 sm:ml-2 hidden sm:inline">コマンドリファレンス</span>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <span id="commandCount" class="text-sm text-gray-500">コマンド読み込み中...</span>
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <span id="commandCount" class="text-xs sm:text-sm text-gray-500">全 5 コマンド</span>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Search and Filter -->
-    <section class="bg-discord text-white py-8">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-6">
-                <h1 class="text-3xl font-bold mb-2">Disnana コマンドリファレンス</h1>
-                <p class="text-lg opacity-90">プレフィックス: <code class="bg-white bg-opacity-20 px-2 py-1 rounded">spb!</code> または <code class="bg-white bg-opacity-20 px-2 py-1 rounded">/</code></p>
+    <!-- Search Section -->
+    <section class="bg-discord text-white py-4 sm:py-6">
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+            <div class="text-center mb-4 sm:mb-6">
+                <h1 class="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">Disnana コマンドリファレンス</h1>
+                <div class="text-sm sm:text-lg opacity-90 flex flex-wrap justify-center gap-2">
+                    <span>プレフィックス:</span>
+                    <code class="bg-white bg-opacity-20 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm">spb!</code>
+                    <span>または</span>
+                    <code class="bg-white bg-opacity-20 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm">/</code>
+                </div>
             </div>
 
-            <!-- Search Box -->
-            <div class="max-w-md mx-auto">
+            <!-- Search Controls -->
+            <div class="max-w-lg mx-auto space-y-3">
+                <!-- Search Mode Toggle -->
+                <div class="flex bg-white bg-opacity-20 rounded-lg p-1">
+                    <button id="nameSearchBtn" class="flex-1 py-2 px-3 rounded-md text-xs sm:text-sm font-medium transition-colors bg-white text-discord">
+                        <i class="fas fa-tag mr-1 sm:mr-2"></i>コマンド名
+                    </button>
+                    <button id="fullSearchBtn" class="flex-1 py-2 px-3 rounded-md text-xs sm:text-sm font-medium transition-colors text-white">
+                        <i class="fas fa-search mr-1 sm:mr-2"></i>全文検索
+                    </button>
+                </div>
+
+                <!-- Search Box -->
                 <div class="relative">
                     <input
                         type="text"
                         id="searchInput"
                         placeholder="コマンドを検索..."
-                        class="w-full px-4 py-3 pl-12 text-gray-900 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                        class="w-full px-3 sm:px-4 py-2 sm:py-3 pl-10 sm:pl-12 text-gray-900 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 text-sm sm:text-base"
                     >
-                    <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i class="fas fa-search absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm sm:text-base"></i>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Quick Navigation -->
-    <section class="bg-white py-6 border-b">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-wrap justify-center gap-4" id="filterButtons">
-                <button onclick="filterCommands('all')" class="filter-btn bg-discord text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                    <i class="fas fa-list mr-2"></i>全て
+    <!-- Filter Buttons -->
+    <section class="bg-white py-3 sm:py-4 border-b">
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+            <div class="flex flex-wrap justify-center gap-2 sm:gap-3" id="filterButtons">
+                <button onclick="filterCommands('all')" class="filter-btn bg-discord text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors">
+                    <i class="fas fa-list mr-1 sm:mr-2"></i>全て
                 </button>
             </div>
         </div>
     </section>
 
-    <!-- Commands List -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div id="commandsContainer" class="space-y-6">
-            <!-- Commands will be loaded here -->
+    <!-- Commands Grid -->
+    <main class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6">
+        <!-- Desktop View -->
+        <div id="desktopView" class="hidden lg:block">
+            <div id="commandsContainer" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <!-- Commands will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Mobile/Tablet View -->
+        <div id="mobileView" class="lg:hidden">
+            <div id="commandsContainerMobile" class="space-y-4">
+                <!-- Commands will be loaded here -->
+            </div>
         </div>
 
         <!-- Loading Message -->
-        <div id="loadingMessage" class="text-center py-12">
-            <i class="fas fa-spinner fa-spin text-discord text-4xl mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-600 mb-2">コマンドを読み込み中...</h3>
+        <div id="loadingMessage" class="text-center py-8 sm:py-12">
+            <i class="fas fa-spinner fa-spin text-discord text-2xl sm:text-4xl mb-2 sm:mb-4"></i>
+            <h3 class="text-lg sm:text-xl font-semibold text-gray-600 mb-1 sm:mb-2">コマンドを読み込み中...</h3>
         </div>
 
         <!-- No Results Message -->
-        <div id="noResults" class="hidden text-center py-12">
-            <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-600 mb-2">コマンドが見つかりません</h3>
-            <p class="text-gray-500">検索条件を変更して再度お試しください</p>
+        <div id="noResults" class="hidden text-center py-8 sm:py-12">
+            <i class="fas fa-search text-gray-400 text-2xl sm:text-4xl mb-2 sm:mb-4"></i>
+            <h3 class="text-lg sm:text-xl font-semibold text-gray-600 mb-1 sm:mb-2">コマンドが見つかりません</h3>
+            <p class="text-gray-500 text-sm sm:text-base">検索条件を変更して再度お試しください</p>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-white py-8 mt-12">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="flex items-center justify-center mb-4">
-                <i class="fas fa-robot text-2xl mr-3"></i>
-                <span class="text-xl font-bold">Disnana</span>
+    <footer class="bg-gray-900 text-white py-6 sm:py-8 mt-8 sm:mt-12">
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 text-center">
+            <div class="flex items-center justify-center mb-2 sm:mb-4">
+                <i class="fas fa-robot text-xl sm:text-2xl mr-2 sm:mr-3"></i>
+                <span class="text-lg sm:text-xl font-bold">Disnana</span>
             </div>
-            <p class="text-gray-400 text-sm">
-                詳細なコマンド情報は <code class="bg-gray-800 px-2 py-1 rounded">help [コマンド名]</code> で確認できます
+            <p class="text-gray-400 text-xs sm:text-sm">
+                詳細なコマンド情報は <code class="bg-gray-800 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs">help [コマンド名]</code> で確認できます
             </p>
         </div>
     </footer>
 
     <!-- Back to Top -->
-    <button id="backToTop" class="fixed bottom-6 right-6 bg-discord hover:bg-discord-dark text-white p-3 rounded-full shadow-lg transition-all opacity-0 pointer-events-none">
-        <i class="fas fa-arrow-up"></i>
+    <button id="backToTop" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-discord hover:bg-discord-dark text-white p-2 sm:p-3 rounded-full shadow-lg transition-all opacity-0 pointer-events-none">
+        <i class="fas fa-arrow-up text-sm sm:text-base"></i>
     </button>
 
     <script>
-        // コマンドデータ（JSON形式で管理）
+        // コマンドデータ
         const commandsData = {
             "commands": [
                 {
@@ -120,10 +163,10 @@
                     "description": "ボットのコマンド一覧を表示する",
                     "detailed_description": "利用可能な全コマンドの一覧を表示し、各コマンドの基本情報を確認できます。",
                     "usage": "help [コマンド名]",
-                    "usage_explanation": "- コマンド名: 詳細を知りたいコマンド名（省略可）",
+                    "usage_explanation": "コマンド名: 詳細を知りたいコマンド名（省略可）",
                     "examples": [
                         {"description": "全コマンドの一覧を表示", "command": "help"},
-                        {"description": "特定コマンドの詳細を表示", "command": "help example"}
+                        {"description": "特定コマンドの詳細を表示", "command": "help purge"}
                     ],
                     "permissions": "誰でも使用可能",
                     "cooldown": null,
@@ -146,7 +189,7 @@
                 {
                     "name": "ping",
                     "category": "test",
-                    "description": "ボットのレスポンス時間を測定します",
+                    "description": "ボットのレスポンス時間を測定",
                     "detailed_description": "ボットの応答速度とDiscord APIとの接続状況を確認できます。",
                     "usage": "ping",
                     "usage_explanation": "パラメータはありません",
@@ -160,10 +203,10 @@
                 {
                     "name": "settings",
                     "category": "management",
-                    "description": "Disnanaのボットの設定を変更することができます",
+                    "description": "Disnanaのボット設定を変更",
                     "detailed_description": "ボットの各種設定項目を変更・確認できる管理用コマンドです。",
                     "usage": "settings [項目] [値]",
-                    "usage_explanation": "- 項目: 変更したい設定項目\n- 値: 新しい設定値",
+                    "usage_explanation": "項目: 変更したい設定項目、値: 新しい設定値",
                     "examples": [
                         {"description": "設定メニューを表示", "command": "settings"}
                     ],
@@ -174,169 +217,269 @@
                 {
                     "name": "purge",
                     "category": "management",
-                    "description": "メッセージの一括削除を行います",
-                    "detailed_description": "スラッシュコマンド専用で、指定された数および期間内のメッセージを特定ユーザーまたは全体対象に削除します。",
-                    "usage": "/purge [amount:int=5] [time:str=None] [user:discord.Member=None]",
-                    "usage_explanation": "- amount: 削除するメッセージ数。デフォルトは5、最大100まで指定可能\n- time: 削除範囲の時間指定。例: 1w2d3h4min5s。最大2週間まで指定可能\n- user: 削除対象のユーザーを指定。指定がない場合は全ユーザー対象",
+                    "description": "メッセージの一括削除",
+                    "detailed_description": "スラッシュコマンド専用で、指定された数および期間内のメッセージを削除します。",
+                    "usage": "/purge [amount] [time] [user]",
+                    "usage_explanation": "amount: 削除数(最大100)、time: 期間指定、user: 対象ユーザー",
                     "examples": [
-                        {"description": "直近5件のメッセージを削除", "command": "/purge"},
-                        {"description": "直近10件のメッセージを削除", "command": "/purge amount:10"},
-                        {"description": "1週間以内の特定ユーザーのメッセージを削除", "command": "/purge amount:100 time:1w user:@User"},
-                        {"description": "3日間の全メッセージを50件まで削除", "command": "/purge amount:50 time:3d"},
-                        {"description": "直近1時間30分のメッセージを削除", "command": "/purge amount:20 time:1h30min"}
+                        {"description": "直近5件削除", "command": "/purge"},
+                        {"description": "10件削除", "command": "/purge amount:10"},
+                        {"description": "1週間分削除", "command": "/purge amount:100 time:1w"}
                     ],
-                    "permissions": "メッセージ管理権限が必要",
-                    "cooldown": "30秒に1回まで使用可能",
+                    "permissions": "メッセージ管理権限",
+                    "cooldown": "30秒",
                     "notes": [
-                        "⚠️ スラッシュコマンド専用です（spb!purgeは使用不可）",
-                        "⚠️ DMチャンネルでは使用できません",
-                        "⚠️ ボットにメッセージ管理権限が必要です",
-                        "⚠️ 不可逆な操作なので使用前に注意してください",
-                        "💡 時間指定の例: 1w=1週間、2d=2日、3h=3時間、4min=4分、5s=5秒"
+                        "⚠️ スラッシュコマンド専用",
+                        "⚠️ 不可逆な操作です",
+                        "💡 時間例: 1w=週、1d=日、1h=時間"
                     ]
                 }
             ]
         };
 
-        // カテゴリの色とアイコン設定
+        // カテゴリ設定
         const categoryConfig = {
-            "basic": { color: "blue", icon: "fas fa-info-circle", name: "基本" },
-            "test": { color: "green", icon: "fas fa-vial", name: "テスト" },
-            "management": { color: "red", icon: "fas fa-cogs", name: "管理" }
+            "basic": { color: "blue", icon: "fas fa-info-circle", name: "基本", bgColor: "bg-blue-50", textColor: "text-blue-600", borderColor: "border-blue-200" },
+            "test": { color: "green", icon: "fas fa-vial", name: "テスト", bgColor: "bg-green-50", textColor: "text-green-600", borderColor: "border-green-200" },
+            "management": { color: "red", icon: "fas fa-cogs", name: "管理", bgColor: "bg-red-50", textColor: "text-red-600", borderColor: "border-red-200" }
         };
 
-        // DOM要素の取得
+        // DOM要素
         const commandsContainer = document.getElementById('commandsContainer');
+        const commandsContainerMobile = document.getElementById('commandsContainerMobile');
         const loadingMessage = document.getElementById('loadingMessage');
         const noResults = document.getElementById('noResults');
         const searchInput = document.getElementById('searchInput');
         const commandCount = document.getElementById('commandCount');
         const filterButtons = document.getElementById('filterButtons');
+        const nameSearchBtn = document.getElementById('nameSearchBtn');
+        const fullSearchBtn = document.getElementById('fullSearchBtn');
 
-        // コマンドカードを生成する関数
-        function createCommandCard(command) {
+        let searchMode = 'name'; // 'name' or 'full'
+        let allCommands = [];
+
+        // デスクトップ用カード作成
+        function createDesktopCard(command) {
             const config = categoryConfig[command.category];
-            const colorClasses = {
-                blue: { border: 'border-blue-500', text: 'text-blue-500', bg: 'bg-blue-100', textBg: 'text-blue-800' },
-                green: { border: 'border-green-500', text: 'text-green-500', bg: 'bg-green-100', textBg: 'text-green-800' },
-                red: { border: 'border-red-500', text: 'text-red-500', bg: 'bg-red-100', textBg: 'text-red-800' }
-            };
-
-            const colors = colorClasses[config.color];
-
-            // 使用例をHTMLに変換
-            const examplesHTML = command.examples.map(example => `
-                <div class="mb-3">
-                    <p class="text-sm text-gray-600 mb-1">${example.description}:</p>
-                    <div class="bg-gray-900 text-green-400 p-2 rounded font-mono text-sm">
-                        ${example.command}
-                    </div>
-                </div>
-            `).join('');
-
-            // 注意事項をHTMLに変換
-            const notesHTML = command.notes && command.notes.length > 0 ? `
-                <div class="mb-4">
-                    <h4 class="font-semibold text-gray-900 mb-2">注意事項・Tips</h4>
-                    <div class="space-y-2">
-                        ${command.notes.map(note => `
-                            <div class="flex items-start">
-                                <i class="fas fa-lightbulb ${colors.text} mt-1 mr-2 text-sm"></i>
-                                <span class="text-sm text-gray-700">${note}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            ` : '';
-
-            // クールダウン情報
-            const cooldownHTML = command.cooldown ? `
-                <div class="flex items-center text-sm text-gray-500 mt-2">
-                    <i class="fas fa-clock mr-2"></i>
-                    <span>クールダウン: ${command.cooldown}</span>
-                </div>
-            ` : '';
 
             return `
-                <div class="command-card bg-white rounded-lg shadow-md p-6 border-l-4 ${colors.border}" data-category="${command.category}" data-command="${command.name}">
-                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-4">
-                        <div class="flex items-center mb-2 lg:mb-0">
-                            <i class="${config.icon} ${colors.text} text-2xl mr-4"></i>
+                <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" data-category="${command.category}" data-command="${command.name}">
+                    <!-- Header -->
+                    <div class="p-4 border-b border-gray-100">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 ${config.bgColor} rounded-lg flex items-center justify-center mr-3">
+                                    <i class="${config.icon} ${config.textColor} text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg text-gray-900">${command.name}</h3>
+                                    <span class="inline-block px-2 py-1 text-xs font-medium ${config.bgColor} ${config.textColor} rounded-full mt-1">
+                                        ${config.name}
+                                    </span>
+                                </div>
+                            </div>
+                            <button class="toggle-details text-gray-400 hover:text-gray-600 p-1">
+                                <i class="fas fa-chevron-down text-sm transform transition-transform"></i>
+                            </button>
+                        </div>
+
+                        <p class="text-gray-700 mt-3 mb-2">${command.description}</p>
+
+                        <!-- Quick Info -->
+                        <div class="flex flex-wrap gap-3 text-xs text-gray-500">
+                            <span><i class="fas fa-terminal mr-1"></i>${command.usage}</span>
+                            <span><i class="fas fa-shield-alt mr-1"></i>${command.permissions}</span>
+                            ${command.cooldown ? `<span><i class="fas fa-clock mr-1"></i>${command.cooldown}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Expandable Details -->
+                    <div class="details-content">
+                        <div class="p-4 space-y-4">
+                            <!-- Usage Examples -->
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-900">${command.name}</h3>
-                                <span class="${colors.bg} ${colors.textBg} text-xs px-2 py-1 rounded-full">${config.name}</span>
+                                <h4 class="font-semibold text-gray-900 mb-2 text-sm">使用例</h4>
+                                <div class="space-y-2">
+                                    ${command.examples.map(example => `
+                                        <div class="bg-gray-50 p-2 rounded text-xs">
+                                            <div class="text-gray-600 mb-1">${example.description}:</div>
+                                            <code class="text-green-600 font-mono">${example.command}</code>
+                                        </div>
+                                    `).join('')}
+                                </div>
                             </div>
+
+                            ${command.notes && command.notes.length > 0 ? `
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-2 text-sm">注意事項・Tips</h4>
+                                    <div class="space-y-1">
+                                        ${command.notes.map(note => `
+                                            <div class="text-xs text-gray-600 flex items-start">
+                                                <i class="fas fa-lightbulb ${config.textColor} mr-1 mt-0.5 text-xs"></i>
+                                                <span>${note}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <h4 class="font-semibold text-gray-900 mb-2">基本説明</h4>
-                        <p class="text-gray-700">${command.description}</p>
-                        ${command.detailed_description ? `<p class="text-sm text-gray-600 mt-2">${command.detailed_description}</p>` : ''}
-                    </div>
-
-                    <div class="mb-4">
-                        <h4 class="font-semibold text-gray-900 mb-2">使用方法</h4>
-                        <div class="bg-gray-100 p-3 rounded-lg font-mono text-sm mb-2">
-                            ${command.usage}
-                        </div>
-                        ${command.usage_explanation ? `
-                            <div class="text-sm text-gray-600">
-                                <div class="whitespace-pre-line">${command.usage_explanation}</div>
-                            </div>
-                        ` : ''}
-                    </div>
-
-                    <div class="mb-4">
-                        <h4 class="font-semibold text-gray-900 mb-2">使用例</h4>
-                        ${examplesHTML}
-                    </div>
-
-                    ${notesHTML}
-
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center text-sm text-gray-500">
-                            <i class="fas fa-shield-alt mr-2"></i>
-                            <span>${command.permissions}</span>
-                        </div>
-                        ${cooldownHTML}
                     </div>
                 </div>
             `;
         }
 
-        // フィルターボタンを生成
+        // モバイル用カード作成
+        function createMobileCard(command) {
+            const config = categoryConfig[command.category];
+
+            return `
+                <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" data-category="${command.category}" data-command="${command.name}">
+                    <!-- Compact Header -->
+                    <div class="p-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 ${config.bgColor} rounded-md flex items-center justify-center mr-2">
+                                    <i class="${config.icon} ${config.textColor} text-sm"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-base text-gray-900">${command.name}</h3>
+                                    <span class="inline-block px-1.5 py-0.5 text-xs font-medium ${config.bgColor} ${config.textColor} rounded">
+                                        ${config.name}
+                                    </span>
+                                </div>
+                            </div>
+                            <button class="toggle-details text-gray-400 hover:text-gray-600 p-1">
+                                <i class="fas fa-chevron-down text-xs transform transition-transform"></i>
+                            </button>
+                        </div>
+
+                        <p class="text-gray-700 text-sm mb-2">${command.description}</p>
+
+                        <!-- Basic Info -->
+                        <div class="text-xs text-gray-500 space-y-1">
+                            <div><i class="fas fa-terminal mr-1 w-3"></i>${command.usage}</div>
+                            <div><i class="fas fa-shield-alt mr-1 w-3"></i>${command.permissions}</div>
+                        </div>
+                    </div>
+
+                    <!-- Expandable Details -->
+                    <div class="details-content">
+                        <div class="px-3 pb-3 border-t border-gray-100">
+                            <div class="pt-3 space-y-3">
+                                <!-- Examples -->
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-1 text-sm">使用例</h4>
+                                    <div class="space-y-1">
+                                        ${command.examples.slice(0, 2).map(example => `
+                                            <div class="bg-gray-50 p-2 rounded text-xs">
+                                                <div class="text-gray-600 mb-1">${example.description}</div>
+                                                <code class="text-green-600 font-mono">${example.command}</code>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                ${command.notes && command.notes.length > 0 ? `
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900 mb-1 text-sm">Tips</h4>
+                                        <div class="space-y-1">
+                                            ${command.notes.slice(0, 3).map(note => `
+                                                <div class="text-xs text-gray-600">${note}</div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // カードの詳細表示切り替え
+        function setupToggleHandlers() {
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.toggle-details')) {
+                    const card = e.target.closest('.command-card');
+                    const details = card.querySelector('.details-content');
+                    const icon = e.target.closest('.toggle-details').querySelector('i');
+
+                    details.classList.toggle('expanded');
+                    icon.classList.toggle('rotate-180');
+                }
+            });
+        }
+
+        // フィルターボタン作成
         function createFilterButtons() {
             const categories = [...new Set(commandsData.commands.map(cmd => cmd.category))];
 
             categories.forEach(category => {
                 const config = categoryConfig[category];
                 const button = document.createElement('button');
-                button.className = 'filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-gray-300';
-                button.innerHTML = `<i class="${config.icon} mr-2"></i>${config.name}`;
+                button.className = 'filter-btn bg-gray-200 text-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:bg-gray-300';
+                button.innerHTML = `<i class="${config.icon} mr-1 sm:mr-2"></i>${config.name}`;
                 button.onclick = () => filterCommands(category);
                 filterButtons.appendChild(button);
             });
         }
 
-        // コマンドを読み込んで表示
-        function loadCommands() {
-            loadingMessage.style.display = 'none';
+        // 検索モード切り替え
+        function toggleSearchMode(mode) {
+            searchMode = mode;
 
-            // フィルターボタンを作成
-            createFilterButtons();
+            // ボタンスタイル更新
+            if (mode === 'name') {
+                nameSearchBtn.classList.add('bg-white', 'text-discord');
+                nameSearchBtn.classList.remove('text-white');
+                fullSearchBtn.classList.remove('bg-white', 'text-discord');
+                fullSearchBtn.classList.add('text-white');
+                searchInput.placeholder = 'コマンド名で検索...';
+            } else {
+                fullSearchBtn.classList.add('bg-white', 'text-discord');
+                fullSearchBtn.classList.remove('text-white');
+                nameSearchBtn.classList.remove('bg-white', 'text-discord');
+                nameSearchBtn.classList.add('text-white');
+                searchInput.placeholder = '全文検索...';
+            }
 
-            // コマンドカードを生成
-            const commandCards = commandsData.commands.map(command => createCommandCard(command)).join('');
-            commandsContainer.innerHTML = commandCards;
+            // 検索を再実行
+            if (searchInput.value) {
+                performSearch();
+            }
+        }
 
-            // コマンド数を更新
-            commandCount.textContent = `全 ${commandsData.commands.length} コマンド`;
+        // 検索実行
+        function performSearch() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const commandCards = document.querySelectorAll('.command-card');
+            let visibleCards = 0;
+
+            commandCards.forEach(card => {
+                const commandName = card.dataset.command.toLowerCase();
+                let shouldShow = false;
+
+                if (searchMode === 'name') {
+                    shouldShow = commandName.includes(searchTerm);
+                } else {
+                    const cardText = card.textContent.toLowerCase();
+                    shouldShow = cardText.includes(searchTerm);
+                }
+
+                if (shouldShow) {
+                    card.style.display = 'block';
+                    visibleCards++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            noResults.style.display = visibleCards === 0 ? 'block' : 'none';
         }
 
         // フィルター機能
         function filterCommands(category) {
-            // ボタンのスタイル更新
+            // ボタンスタイル更新
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('bg-discord', 'text-white');
                 btn.classList.add('bg-gray-200', 'text-gray-700');
@@ -345,7 +488,7 @@
             event.target.classList.remove('bg-gray-200', 'text-gray-700');
             event.target.classList.add('bg-discord', 'text-white');
 
-            // カードのフィルタリング
+            // カードフィルタリング
             const commandCards = document.querySelectorAll('.command-card');
             let visibleCards = 0;
 
@@ -362,44 +505,54 @@
             searchInput.value = '';
         }
 
-        // 検索機能
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const commandCards = document.querySelectorAll('.command-card');
-            let visibleCards = 0;
+        // コマンド読み込み
+        function loadCommands() {
+            loadingMessage.style.display = 'none';
+            allCommands = commandsData.commands;
 
-            commandCards.forEach(card => {
-                const commandName = card.dataset.command.toLowerCase();
-                const cardText = card.textContent.toLowerCase();
+            // フィルターボタン作成
+            createFilterButtons();
 
-                if (commandName.includes(searchTerm) || cardText.includes(searchTerm)) {
-                    card.style.display = 'block';
-                    visibleCards++;
+            // デスクトップ版
+            const desktopCards = allCommands.map(command => createDesktopCard(command)).join('');
+            commandsContainer.innerHTML = desktopCards;
+
+            // モバイル版
+            const mobileCards = allCommands.map(command => createMobileCard(command)).join('');
+            commandsContainerMobile.innerHTML = mobileCards;
+
+            // トグルハンドラー設定
+            setupToggleHandlers();
+
+            // コマンド数更新
+            commandCount.textContent = `全 ${allCommands.length} コマンド`;
+        }
+
+        // イベントリスナー設定
+        document.addEventListener('DOMContentLoaded', function() {
+            // 検索モード切り替え
+            nameSearchBtn.addEventListener('click', () => toggleSearchMode('name'));
+            fullSearchBtn.addEventListener('click', () => toggleSearchMode('full'));
+
+            // 検索
+            searchInput.addEventListener('input', performSearch);
+
+            // トップに戻る
+            const backToTopBtn = document.getElementById('backToTop');
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    backToTopBtn.classList.remove('opacity-0', 'pointer-events-none');
                 } else {
-                    card.style.display = 'none';
+                    backToTopBtn.classList.add('opacity-0', 'pointer-events-none');
                 }
             });
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
 
-            noResults.style.display = visibleCards === 0 ? 'block' : 'none';
+            // コマンド読み込み
+            loadCommands();
         });
-
-        // トップに戻るボタン
-        const backToTopBtn = document.getElementById('backToTop');
-
-        window.addEventListener('scroll', () => {
-            if (window.pageYOffset > 300) {
-                backToTopBtn.classList.remove('opacity-0', 'pointer-events-none');
-            } else {
-                backToTopBtn.classList.add('opacity-0', 'pointer-events-none');
-            }
-        });
-
-        backToTopBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-
-        // ページ読み込み時にコマンドを表示
-        document.addEventListener('DOMContentLoaded', loadCommands);
     </script>
 </body>
 </html>
