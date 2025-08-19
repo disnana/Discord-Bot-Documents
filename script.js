@@ -53,12 +53,18 @@ function initializeElements() {
     collapseAllBtn = document.getElementById('collapseAllBtn');
 }
 
-// デスクトップ用カード作成
-function createDesktopCard(command) {
+// デスクトップ用カード作成（一意ID付き）
+function createDesktopCard(command, index) {
     const config = categoryConfig[command.category];
+    const cardId = `card-desktop-${command.name}-${index}`;
+    const detailsId = `details-desktop-${command.name}-${index}`;
+    const iconId = `icon-desktop-${command.name}-${index}`;
     
     return `
-        <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" data-category="${command.category}" data-command="${command.name}">
+        <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" 
+             data-category="${command.category}" 
+             data-command="${command.name}"
+             id="${cardId}">
             <!-- Header -->
             <div class="p-4 border-b border-gray-100">
                 <div class="flex items-start justify-between">
@@ -73,8 +79,10 @@ function createDesktopCard(command) {
                             </span>
                         </div>
                     </div>
-                    <button class="toggle-details text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100">
-                        <i class="fas fa-chevron-down text-sm transform transition-transform duration-200"></i>
+                    <button class="toggle-details text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                            data-target="${detailsId}"
+                            data-icon="${iconId}">
+                        <i class="fas fa-chevron-down text-sm transform transition-transform duration-200" id="${iconId}"></i>
                     </button>
                 </div>
                 
@@ -89,7 +97,7 @@ function createDesktopCard(command) {
             </div>
             
             <!-- Expandable Details -->
-            <div class="details-content">
+            <div class="details-content" id="${detailsId}">
                 <div class="p-4 space-y-4">
                     <!-- Usage Examples -->
                     <div>
@@ -123,12 +131,18 @@ function createDesktopCard(command) {
     `;
 }
 
-// モバイル用カード作成
-function createMobileCard(command) {
+// モバイル用カード作成（一意ID付き）
+function createMobileCard(command, index) {
     const config = categoryConfig[command.category];
+    const cardId = `card-mobile-${command.name}-${index}`;
+    const detailsId = `details-mobile-${command.name}-${index}`;
+    const iconId = `icon-mobile-${command.name}-${index}`;
     
     return `
-        <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" data-category="${command.category}" data-command="${command.name}">
+        <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" 
+             data-category="${command.category}" 
+             data-command="${command.name}"
+             id="${cardId}">
             <!-- Compact Header -->
             <div class="p-3">
                 <div class="flex items-center justify-between mb-2">
@@ -143,8 +157,10 @@ function createMobileCard(command) {
                             </span>
                         </div>
                     </div>
-                    <button class="toggle-details text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100">
-                        <i class="fas fa-chevron-down text-xs transform transition-transform duration-200"></i>
+                    <button class="toggle-details text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                            data-target="${detailsId}"
+                            data-icon="${iconId}">
+                        <i class="fas fa-chevron-down text-xs transform transition-transform duration-200" id="${iconId}"></i>
                     </button>
                 </div>
                 
@@ -158,7 +174,7 @@ function createMobileCard(command) {
             </div>
             
             <!-- Expandable Details -->
-            <div class="details-content">
+            <div class="details-content" id="${detailsId}">
                 <div class="px-3 pb-3 border-t border-gray-100">
                     <div class="pt-3 space-y-3">
                         <!-- Examples -->
@@ -191,25 +207,32 @@ function createMobileCard(command) {
     `;
 }
 
-// 個別カードの詳細表示切り替え
+// 個別カードの詳細表示切り替え（完全に個別化）
 function setupToggleHandlers() {
-    document.removeEventListener('click', handleToggleClick);
-    document.addEventListener('click', handleToggleClick);
+    // 全てのトグルボタンに個別のイベントリスナーを設定
+    document.querySelectorAll('.toggle-details').forEach(button => {
+        // 既存のリスナーを削除
+        button.removeEventListener('click', handleIndividualToggle);
+        // 新しいリスナーを追加
+        button.addEventListener('click', handleIndividualToggle);
+    });
 }
 
-function handleToggleClick(e) {
-    const toggleBtn = e.target.closest('.toggle-details');
-    if (!toggleBtn) return;
-    
+function handleIndividualToggle(e) {
     e.preventDefault();
     e.stopPropagation();
     
-    const card = toggleBtn.closest('.command-card');
-    const details = card.querySelector('.details-content');
-    const icon = toggleBtn.querySelector('i');
+    const button = e.currentTarget;
+    const detailsId = button.getAttribute('data-target');
+    const iconId = button.getAttribute('data-icon');
     
-    details.classList.toggle('expanded');
-    icon.classList.toggle('rotate-180');
+    const details = document.getElementById(detailsId);
+    const icon = document.getElementById(iconId);
+    
+    if (details && icon) {
+        details.classList.toggle('expanded');
+        icon.classList.toggle('rotate-180');
+    }
 }
 
 // 全体展開/折りたたみ機能
@@ -340,7 +363,6 @@ async function loadCommandsData() {
     } catch (error) {
         console.error('コマンドデータの読み込みに失敗しました:', error);
         
-        // フォールバック: エラー表示
         loadingMessage.innerHTML = `
             <i class="fas fa-exclamation-triangle text-red-500 text-2xl sm:text-4xl mb-2 sm:mb-4"></i>
             <h3 class="text-lg sm:text-xl font-semibold text-red-600 mb-1 sm:mb-2">データの読み込みに失敗しました</h3>
@@ -356,21 +378,25 @@ async function loadCommands() {
         allCommands = await loadCommandsData();
         
         if (allCommands.length === 0) {
-            return; // エラー処理は loadCommandsData 内で実行済み
+            return;
         }
 
         loadingMessage.style.display = 'none';
         
         createFilterButtons();
         
-        const desktopCards = allCommands.map(command => createDesktopCard(command)).join('');
+        // indexを渡して完全にユニークなIDを生成
+        const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
         commandsContainer.innerHTML = desktopCards;
         
-        const mobileCards = allCommands.map(command => createMobileCard(command)).join('');
+        const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
         commandsContainerMobile.innerHTML = mobileCards;
         
+        // カード生成後にイベントハンドラーを設定
         setupToggleHandlers();
         commandCount.textContent = `全 ${allCommands.length} コマンド`;
+        
+        console.log('コマンドが正常に読み込まれました:', allCommands.length);
     } catch (error) {
         console.error('コマンドの読み込み処理でエラーが発生しました:', error);
     }
