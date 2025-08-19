@@ -34,6 +34,9 @@
             max-height: 2000px;
             transition: max-height 0.5s ease-in;
         }
+        .toggle-details {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
@@ -159,13 +162,13 @@
         </div>
     </footer>
 
-    <!-- Back to Top - 修正済み -->
+    <!-- Back to Top -->
     <button id="backToTop" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-discord hover:bg-discord-dark text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg transition-all opacity-0 pointer-events-none flex items-center justify-center">
         <i class="fas fa-arrow-up text-sm sm:text-base"></i>
     </button>
 
     <script>
-        // コマンドデータ（前回と同じ）
+        // コマンドデータ
         const commandsData = {
             "commands": [
                 {
@@ -248,7 +251,7 @@
             ]
         };
 
-        // カテゴリ設定（前回と同じ）
+        // カテゴリ設定
         const categoryConfig = {
             "basic": { color: "blue", icon: "fas fa-info-circle", name: "基本", bgColor: "bg-blue-50", textColor: "text-blue-600", borderColor: "border-blue-200" },
             "test": { color: "green", icon: "fas fa-vial", name: "テスト", bgColor: "bg-green-50", textColor: "text-green-600", borderColor: "border-green-200" },
@@ -270,9 +273,9 @@
 
         let searchMode = 'name';
         let allCommands = [];
-        let searchTimeout = null; // debounce用
+        let searchTimeout = null;
 
-        // カード作成関数（前回と同じなので省略）
+        // デスクトップ用カード作成
         function createDesktopCard(command) {
             const config = categoryConfig[command.category];
 
@@ -292,8 +295,8 @@
                                     </span>
                                 </div>
                             </div>
-                            <button class="toggle-details text-gray-400 hover:text-gray-600 p-1">
-                                <i class="fas fa-chevron-down text-sm transform transition-transform"></i>
+                            <button class="toggle-details text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100">
+                                <i class="fas fa-chevron-down text-sm transform transition-transform duration-200"></i>
                             </button>
                         </div>
 
@@ -342,6 +345,7 @@
             `;
         }
 
+        // モバイル用カード作成
         function createMobileCard(command) {
             const config = categoryConfig[command.category];
 
@@ -361,8 +365,8 @@
                                     </span>
                                 </div>
                             </div>
-                            <button class="toggle-details text-gray-400 hover:text-gray-600 p-1">
-                                <i class="fas fa-chevron-down text-xs transform transition-transform"></i>
+                            <button class="toggle-details text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100">
+                                <i class="fas fa-chevron-down text-xs transform transition-transform duration-200"></i>
                             </button>
                         </div>
 
@@ -409,18 +413,26 @@
             `;
         }
 
-        // 個別カードの詳細表示切り替え
+        // 個別カードの詳細表示切り替え - 修正版
         function setupToggleHandlers() {
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.toggle-details')) {
-                    const card = e.target.closest('.command-card');
-                    const details = card.querySelector('.details-content');
-                    const icon = e.target.closest('.toggle-details').querySelector('i');
+            // 既存のイベントリスナーを削除してから新しく追加
+            document.removeEventListener('click', handleToggleClick);
+            document.addEventListener('click', handleToggleClick);
+        }
 
-                    details.classList.toggle('expanded');
-                    icon.classList.toggle('rotate-180');
-                }
-            });
+        function handleToggleClick(e) {
+            const toggleBtn = e.target.closest('.toggle-details');
+            if (!toggleBtn) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const card = toggleBtn.closest('.command-card');
+            const details = card.querySelector('.details-content');
+            const icon = toggleBtn.querySelector('i');
+
+            details.classList.toggle('expanded');
+            icon.classList.toggle('rotate-180');
         }
 
         // 全体展開/折りたたみ機能
@@ -479,7 +491,7 @@
             }
         }
 
-        // 検索実行（debounce対応）
+        // 検索実行
         function performSearch() {
             const searchTerm = searchInput.value.toLowerCase();
             const commandCards = document.querySelectorAll('.command-card');
@@ -507,10 +519,10 @@
             noResults.style.display = visibleCards === 0 ? 'block' : 'none';
         }
 
-        // debounce付き検索
+        // debounce付き検索 - 遅延時間を150msに短縮
         function debouncedSearch() {
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(performSearch, 300); // 300ms待機
+            searchTimeout = setTimeout(performSearch, 150); // 300ms -> 150ms
         }
 
         // フィルター機能
@@ -562,7 +574,7 @@
             nameSearchBtn.addEventListener('click', () => toggleSearchMode('name'));
             fullSearchBtn.addEventListener('click', () => toggleSearchMode('full'));
 
-            // 検索（debounce対応）
+            // 検索（debounce対応・遅延短縮）
             searchInput.addEventListener('input', debouncedSearch);
 
             // 全体展開/折りたたみ
