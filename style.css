@@ -1,0 +1,78 @@
+/* Custom Styles for Disnana Command Reference */
+
+.command-card {
+    transition: all 0.3s ease;
+}
+
+.command-card:hover {
+    transform: translateY(-2px);
+}
+
+.details-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.details-content.expanded {
+    max-height: 2000px;
+    transition: max-height 0.5s ease-in;
+}
+
+.toggle-details {
+    cursor: pointer;
+}
+
+/* ローディングアニメーション */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.command-card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* スクロールバーのカスタマイズ */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* フォーカス時のアクセシビリティ */
+.toggle-details:focus {
+    outline: 2px solid #5865F2;
+    outline-offset: 2px;
+}
+
+.filter-btn:focus,
+button:focus {
+    outline: 2px solid #5865F2;
+    outline-offset: 2px;
+}
+
+/* 小さな画面でのテキスト調整 */
+@media (max-width: 640px) {
+    .command-card {
+        font-size: 0.9rem;
+    }
+}
