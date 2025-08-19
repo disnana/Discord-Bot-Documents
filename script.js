@@ -29,7 +29,7 @@ function createDesktopCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const uniqueId = `desktop-${index}`;
+    const uniqueId = `desktop-${index}-${Date.now()}`;
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" 
@@ -49,7 +49,7 @@ function createDesktopCard(command, index) {
                         </div>
                     </div>
                     <button class="toggle-btn text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            data-target="details-${uniqueId}">
+                            data-target="${uniqueId}">
                         <i class="fas fa-chevron-down text-sm transform transition-transform duration-200 toggle-icon"></i>
                     </button>
                 </div>
@@ -63,7 +63,9 @@ function createDesktopCard(command, index) {
                 </div>
             </div>
             
-            <div class="details-content" id="details-${uniqueId}">
+            <div class="details-content" 
+                 id="${uniqueId}"
+                 style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;">
                 <div class="p-4 space-y-4">
                     <div>
                         <h4 class="font-semibold text-gray-900 mb-2 text-sm">使用例</h4>
@@ -101,7 +103,7 @@ function createMobileCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const uniqueId = `mobile-${index}`;
+    const uniqueId = `mobile-${index}-${Date.now()}`;
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" 
@@ -121,7 +123,7 @@ function createMobileCard(command, index) {
                         </div>
                     </div>
                     <button class="toggle-btn text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            data-target="details-${uniqueId}">
+                            data-target="${uniqueId}">
                         <i class="fas fa-chevron-down text-xs transform transition-transform duration-200 toggle-icon"></i>
                     </button>
                 </div>
@@ -134,7 +136,9 @@ function createMobileCard(command, index) {
                 </div>
             </div>
             
-            <div class="details-content" id="details-${uniqueId}">
+            <div class="details-content" 
+                 id="${uniqueId}"
+                 style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;">
                 <div class="px-3 pb-3 border-t border-gray-100">
                     <div class="pt-3 space-y-3">
                         <div>
@@ -166,16 +170,13 @@ function createMobileCard(command, index) {
     `;
 }
 
-// 個別開閉のイベントハンドラー（イベント委譲使用）
+// 個別開閉のイベントハンドラー（インラインスタイル使用）
 function setupToggleHandlers() {
-    // 既存のリスナーを削除
     document.removeEventListener('click', handleToggleClick);
-    // 新しいリスナーを追加（イベント委譲）
     document.addEventListener('click', handleToggleClick);
 }
 
 function handleToggleClick(e) {
-    // toggle-btnクラスを持つボタンがクリックされた場合のみ処理
     const toggleBtn = e.target.closest('.toggle-btn');
     if (!toggleBtn) return;
     
@@ -187,18 +188,32 @@ function handleToggleClick(e) {
     const icon = toggleBtn.querySelector('.toggle-icon');
     
     if (details && icon) {
-        details.classList.toggle('expanded');
-        icon.classList.toggle('rotate-180');
-        console.log('Toggle executed for:', targetId); // デバッグ用
+        // 現在の状態を取得
+        const isExpanded = details.style.maxHeight && details.style.maxHeight !== '0px';
+        
+        if (isExpanded) {
+            // 折りたたみ
+            details.style.maxHeight = '0px';
+            details.style.transition = 'max-height 0.3s ease-out';
+            icon.classList.remove('rotate-180');
+        } else {
+            // 展開
+            details.style.maxHeight = '2000px';
+            details.style.transition = 'max-height 0.5s ease-in';
+            icon.classList.add('rotate-180');
+        }
+        
+        console.log('Toggle executed for:', targetId, 'Expanded:', !isExpanded);
     } else {
-        console.error('Toggle elements not found:', targetId); // デバッグ用
+        console.error('Toggle elements not found:', targetId);
     }
 }
 
-// 全体展開/折りたたみ機能
+// 全体展開/折りたたみ機能（インラインスタイル版）
 function expandAllDetails() {
     document.querySelectorAll('.details-content').forEach(details => {
-        details.classList.add('expanded');
+        details.style.maxHeight = '2000px';
+        details.style.transition = 'max-height 0.5s ease-in';
     });
     document.querySelectorAll('.toggle-icon').forEach(icon => {
         icon.classList.add('rotate-180');
@@ -207,7 +222,8 @@ function expandAllDetails() {
 
 function collapseAllDetails() {
     document.querySelectorAll('.details-content').forEach(details => {
-        details.classList.remove('expanded');
+        details.style.maxHeight = '0px';
+        details.style.transition = 'max-height 0.3s ease-out';
     });
     document.querySelectorAll('.toggle-icon').forEach(icon => {
         icon.classList.remove('rotate-180');
@@ -349,12 +365,19 @@ async function loadCommands() {
         
         createFilterButtons();
         
-        // カード生成
-        const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
+        // カード生成（少し時間をずらしてユニークIDを確保）
+        const desktopCards = allCommands.map((command, index) => {
+            return createDesktopCard(command, index);
+        }).join('');
         commandsContainer.innerHTML = desktopCards;
         
-        const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
-        commandsContainerMobile.innerHTML = mobileCards;
+        // モバイル版は少し遅らせる
+        setTimeout(() => {
+            const mobileCards = allCommands.map((command, index) => {
+                return createMobileCard(command, index);
+            }).join('');
+            commandsContainerMobile.innerHTML = mobileCards;
+        }, 10);
         
         // イベントハンドラー設定
         setupToggleHandlers();
