@@ -1,4 +1,38 @@
 {
+  "categories": {
+    "basic": {
+      "name": "基本",
+      "icon": "fas fa-info-circle",
+      "color": "blue",
+      "bgColor": "bg-blue-50",
+      "textColor": "text-blue-600",
+      "borderColor": "border-blue-200"
+    },
+    "test": {
+      "name": "テスト", 
+      "icon": "fas fa-vial",
+      "color": "green",
+      "bgColor": "bg-green-50",
+      "textColor": "text-green-600",
+      "borderColor": "border-green-200"
+    },
+    "management": {
+      "name": "管理",
+      "icon": "fas fa-cogs", 
+      "color": "red",
+      "bgColor": "bg-red-50",
+      "textColor": "text-red-600",
+      "borderColor": "border-red-200"
+    },
+    "utility": {
+      "name": "ユーティリティ",
+      "icon": "fas fa-tools",
+      "color": "purple", 
+      "bgColor": "bg-purple-50",
+      "textColor": "text-purple-600",
+      "borderColor": "border-purple-200"
+    }
+  },
   "commands": [
     {
       "name": "help",
