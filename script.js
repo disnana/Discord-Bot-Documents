@@ -1,9 +1,10 @@
-// Disnana Command Reference Script - Height Independent Grid Version
+// Disnana Command Reference Script - Filter + Search Integration
 
 let categoryConfig = {};
 let allCommands = [];
 let searchMode = 'name';
 let searchTimeout = null;
+let currentFilter = 'all'; // 現在のフィルタ状態を保持
 
 function getElements() {
     return {
@@ -21,7 +22,7 @@ function getElements() {
     };
 }
 
-// ========== ステップ2: 高さ独立カード作成 ==========
+// ========== カード作成（前回と同じ） ==========
 function createDesktopCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
@@ -66,7 +67,6 @@ function createDesktopCard(command, index) {
                     </div>
                 </div>
                 
-                <!-- 高さに影響しない詳細セクション -->
                 <div id="${detailsId}" style="display: none; position: relative; width: 100%;">
                     <div class="p-4 space-y-4">
                         <div>
@@ -177,7 +177,7 @@ function createMobileCard(command, index) {
     `;
 }
 
-// ========== ステップ3: 完全分離された開閉機能（前回と同じ） ==========
+// ========== 開閉機能（前回と同じ） ==========
 function createIndependentToggle(detailsId, iconId) {
     return function(event) {
         event.preventDefault();
@@ -194,7 +194,6 @@ function createIndependentToggle(detailsId, iconId) {
         const isHidden = details.style.display === 'none';
         
         if (isHidden) {
-            // 展開
             details.style.display = 'block';
             details.style.opacity = '0';
             details.style.transition = 'opacity 0.2s ease';
@@ -204,9 +203,7 @@ function createIndependentToggle(detailsId, iconId) {
             });
             
             icon.style.transform = 'rotate(180deg)';
-            console.log('Opened:', detailsId);
         } else {
-            // 折りたたみ
             details.style.opacity = '0';
             
             setTimeout(() => {
@@ -215,9 +212,152 @@ function createIndependentToggle(detailsId, iconId) {
             }, 200);
             
             icon.style.transform = 'rotate(0deg)';
-            console.log('Closed:', detailsId);
         }
     };
+}
+
+// ========== フィルタ + 検索統合機能 ==========
+function applyFilterAndSearch() {
+    const elements = getElements();
+    const searchTerm = elements.searchInput.value.toLowerCase();
+    const commandWrappers = document.querySelectorAll('.command-card-wrapper');
+    let visibleCards = 0;
+
+    commandWrappers.forEach(wrapper => {
+        const card = wrapper.querySelector('.command-card');
+        const commandName = card.dataset.command.toLowerCase();
+        const commandCategory = card.dataset.category;
+        
+        // ステップ1: カテゴリフィルタをチェック
+        let passesFilter = (currentFilter === 'all' || commandCategory === currentFilter);
+        
+        // ステップ2: 検索条件をチェック（フィルタを通過した場合のみ）
+        let passesSearch = true;
+        if (searchTerm && passesFilter) {
+            if (searchMode === 'name') {
+                passesSearch = commandName.includes(searchTerm);
+            } else {
+                const cardText = wrapper.textContent.toLowerCase();
+                passesSearch = cardText.includes(searchTerm);
+            }
+        }
+        
+        // ステップ3: 両方の条件を満たす場合のみ表示
+        if (passesFilter && passesSearch) {
+            wrapper.style.display = 'block';
+            visibleCards++;
+        } else {
+            wrapper.style.display = 'none';
+        }
+    });
+
+    elements.noResults.style.display = visibleCards === 0 ? 'block' : 'none';
+    
+    // 現在の状態をコンソールに表示
+    console.log('Filter applied:', {
+        filter: currentFilter,
+        search: searchTerm,
+        searchMode: searchMode,
+        visible: visibleCards
+    });
+}
+
+// ========== 検索機能（統合版） ==========
+function performSearch() {
+    applyFilterAndSearch();
+}
+
+function debouncedSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(performSearch, 150);
+}
+
+// ========== フィルタ機能（統合版） ==========
+function filterCommands(category) {
+    const elements = getElements();
+    
+    // 現在のフィルタ状態を更新
+    currentFilter = category;
+    
+    // ボタンの見た目を更新
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('bg-discord', 'text-white');
+        btn.classList.add('bg-gray-200', 'text-gray-700');
+    });
+    
+    event.target.classList.remove('bg-gray-200', 'text-gray-700');
+    event.target.classList.add('bg-discord', 'text-white');
+
+    // 統合フィルタ+検索を適用
+    applyFilterAndSearch();
+    
+    console.log('Category filter changed to:', category);
+}
+
+// ========== 検索モード切り替え（統合版） ==========
+function toggleSearchMode(mode) {
+    const elements = getElements();
+    searchMode = mode;
+    
+    if (mode === 'name') {
+        elements.nameSearchBtn.classList.add('bg-white', 'text-discord');
+        elements.nameSearchBtn.classList.remove('text-white');
+        elements.fullSearchBtn.classList.remove('bg-white', 'text-discord');
+        elements.fullSearchBtn.classList.add('text-white');
+        elements.searchInput.placeholder = 'コマンド名で検索...';
+    } else {
+        elements.fullSearchBtn.classList.add('bg-white', 'text-discord');
+        elements.fullSearchBtn.classList.remove('text-white');
+        elements.nameSearchBtn.classList.remove('bg-white', 'text-discord');
+        elements.nameSearchBtn.classList.add('text-white');
+        elements.searchInput.placeholder = '全文検索...';
+    }
+    
+    // 検索モード変更時も再検索を実行
+    if (elements.searchInput.value) {
+        applyFilterAndSearch();
+    }
+}
+
+// ========== 全体開閉機能（前回と同じ） ==========
+function expandAllDetails() {
+    allCommands.forEach((_, index) => {
+        const desktopDetails = document.getElementById(`desktop_details_${index}`);
+        const desktopIcon = document.getElementById(`desktop_icon_${index}`);
+        if (desktopDetails && desktopDetails.style.display === 'none') {
+            desktopDetails.style.display = 'block';
+            desktopDetails.style.opacity = '1';
+            if (desktopIcon) desktopIcon.style.transform = 'rotate(180deg)';
+        }
+        
+        const mobileDetails = document.getElementById(`mobile_details_${index}`);
+        const mobileIcon = document.getElementById(`mobile_icon_${index}`);
+        if (mobileDetails && mobileDetails.style.display === 'none') {
+            mobileDetails.style.display = 'block';
+            mobileDetails.style.opacity = '1';
+            if (mobileIcon) mobileIcon.style.transform = 'rotate(180deg)';
+        }
+    });
+    console.log('全て展開完了');
+}
+
+function collapseAllDetails() {
+    allCommands.forEach((_, index) => {
+        const desktopDetails = document.getElementById(`desktop_details_${index}`);
+        const desktopIcon = document.getElementById(`desktop_icon_${index}`);
+        if (desktopDetails && desktopDetails.style.display !== 'none') {
+            desktopDetails.style.display = 'none';
+            if (desktopIcon) desktopIcon.style.transform = 'rotate(0deg)';
+        }
+        
+        const mobileDetails = document.getElementById(`mobile_details_${index}`);
+        const mobileIcon = document.getElementById(`mobile_icon_${index}`);
+        if (mobileDetails && mobileDetails.style.display !== 'none') {
+            mobileDetails.style.display = 'none';
+            if (mobileIcon) mobileIcon.style.transform = 'rotate(0deg)';
+        }
+    });
+    console.log('全て折りたたみ完了');
 }
 
 // ========== 残りの機能（前回と同じ） ==========
@@ -233,11 +373,9 @@ async function loadCommands() {
 
         elements.loadingMessage.style.display = 'none';
         
-        // デスクトップ版: 高さ独立のグリッドレイアウト
         const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
         elements.commandsContainer.innerHTML = desktopCards;
         
-        // モバイル版: 通常の縦並び
         const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
         elements.commandsContainerMobile.innerHTML = mobileCards;
         
@@ -245,7 +383,7 @@ async function loadCommands() {
         setupToggleHandlers();
         
         elements.commandCount.textContent = `全 ${allCommands.length} コマンド`;
-        console.log('2列グリッド（高さ独立）でコマンド読み込み完了:', allCommands.length);
+        console.log('フィルタ統合版でコマンド読み込み完了:', allCommands.length);
     } catch (error) {
         console.error('エラー:', error);
     }
@@ -253,66 +391,19 @@ async function loadCommands() {
 
 function setupToggleHandlers() {
     allCommands.forEach((command, index) => {
-        // デスクトップ版
         const desktopButton = document.getElementById(`desktop_button_${index}`);
         if (desktopButton) {
             desktopButton.onclick = createIndependentToggle(`desktop_details_${index}`, `desktop_icon_${index}`);
         }
         
-        // モバイル版  
         const mobileButton = document.getElementById(`mobile_button_${index}`);
         if (mobileButton) {
             mobileButton.onclick = createIndependentToggle(`mobile_details_${index}`, `mobile_icon_${index}`);
         }
     });
-    console.log('高さ独立トグル機能設定完了');
+    console.log('トグル機能設定完了');
 }
 
-function expandAllDetails() {
-    allCommands.forEach((_, index) => {
-        // デスクトップ版
-        const desktopDetails = document.getElementById(`desktop_details_${index}`);
-        const desktopIcon = document.getElementById(`desktop_icon_${index}`);
-        if (desktopDetails && desktopDetails.style.display === 'none') {
-            desktopDetails.style.display = 'block';
-            desktopDetails.style.opacity = '1';
-            if (desktopIcon) desktopIcon.style.transform = 'rotate(180deg)';
-        }
-        
-        // モバイル版
-        const mobileDetails = document.getElementById(`mobile_details_${index}`);
-        const mobileIcon = document.getElementById(`mobile_icon_${index}`);
-        if (mobileDetails && mobileDetails.style.display === 'none') {
-            mobileDetails.style.display = 'block';
-            mobileDetails.style.opacity = '1';
-            if (mobileIcon) mobileIcon.style.transform = 'rotate(180deg)';
-        }
-    });
-    console.log('全て展開完了');
-}
-
-function collapseAllDetails() {
-    allCommands.forEach((_, index) => {
-        // デスクトップ版
-        const desktopDetails = document.getElementById(`desktop_details_${index}`);
-        const desktopIcon = document.getElementById(`desktop_icon_${index}`);
-        if (desktopDetails && desktopDetails.style.display !== 'none') {
-            desktopDetails.style.display = 'none';
-            if (desktopIcon) desktopIcon.style.transform = 'rotate(0deg)';
-        }
-        
-        // モバイル版
-        const mobileDetails = document.getElementById(`mobile_details_${index}`);
-        const mobileIcon = document.getElementById(`mobile_icon_${index}`);
-        if (mobileDetails && mobileDetails.style.display !== 'none') {
-            mobileDetails.style.display = 'none';
-            if (mobileIcon) mobileIcon.style.transform = 'rotate(0deg)';
-        }
-    });
-    console.log('全て折りたたみ完了');
-}
-
-// ======== 他の機能は前回と同じなので省略 ========
 async function loadCommandsData() {
     const elements = getElements();
     
@@ -348,94 +439,9 @@ function createFilterButtons() {
             button.className = 'filter-btn bg-gray-200 text-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:bg-gray-300';
             button.innerHTML = `<i class="${config.icon} mr-1 sm:mr-2"></i>${config.name}`;
             button.onclick = () => filterCommands(category);
-            elements.filterButtons.appendChild(button);
+            filterButtons.appendChild(button);
         }
     });
-}
-
-function toggleSearchMode(mode) {
-    const elements = getElements();
-    searchMode = mode;
-    
-    if (mode === 'name') {
-        elements.nameSearchBtn.classList.add('bg-white', 'text-discord');
-        elements.nameSearchBtn.classList.remove('text-white');
-        elements.fullSearchBtn.classList.remove('bg-white', 'text-discord');
-        elements.fullSearchBtn.classList.add('text-white');
-        elements.searchInput.placeholder = 'コマンド名で検索...';
-    } else {
-        elements.fullSearchBtn.classList.add('bg-white', 'text-discord');
-        elements.fullSearchBtn.classList.remove('text-white');
-        elements.nameSearchBtn.classList.remove('bg-white', 'text-discord');
-        elements.nameSearchBtn.classList.add('text-white');
-        elements.searchInput.placeholder = '全文検索...';
-    }
-    
-    if (elements.searchInput.value) {
-        performSearch();
-    }
-}
-
-function performSearch() {
-    const elements = getElements();
-    const searchTerm = elements.searchInput.value.toLowerCase();
-    const commandWrappers = document.querySelectorAll('.command-card-wrapper');
-    let visibleCards = 0;
-
-    commandWrappers.forEach(wrapper => {
-        const card = wrapper.querySelector('.command-card');
-        const commandName = card.dataset.command.toLowerCase();
-        let shouldShow = false;
-        
-        if (searchMode === 'name') {
-            shouldShow = commandName.includes(searchTerm);
-        } else {
-            const cardText = wrapper.textContent.toLowerCase();
-            shouldShow = cardText.includes(searchTerm);
-        }
-        
-        if (shouldShow) {
-            wrapper.style.display = 'block';
-            visibleCards++;
-        } else {
-            wrapper.style.display = 'none';
-        }
-    });
-
-    elements.noResults.style.display = visibleCards === 0 ? 'block' : 'none';
-}
-
-function debouncedSearch() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(performSearch, 150);
-}
-
-function filterCommands(category) {
-    const elements = getElements();
-    
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('bg-discord', 'text-white');
-        btn.classList.add('bg-gray-200', 'text-gray-700');
-    });
-    
-    event.target.classList.remove('bg-gray-200', 'text-gray-700');
-    event.target.classList.add('bg-discord', 'text-white');
-
-    const commandWrappers = document.querySelectorAll('.command-card-wrapper');
-    let visibleCards = 0;
-    
-    commandWrappers.forEach(wrapper => {
-        const card = wrapper.querySelector('.command-card');
-        if (category === 'all' || card.dataset.category === category) {
-            wrapper.style.display = 'block';
-            visibleCards++;
-        } else {
-            wrapper.style.display = 'none';
-        }
-    });
-
-    elements.noResults.style.display = visibleCards === 0 ? 'block' : 'none';
-    elements.searchInput.value = '';
 }
 
 function setupEventListeners() {
@@ -461,7 +467,7 @@ function setupEventListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('高さ独立2列グリッド版 初期化開始...');
+    console.log('フィルタ統合版 初期化開始...');
     setupEventListeners();
     loadCommands();
 });
