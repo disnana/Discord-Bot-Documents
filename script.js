@@ -24,26 +24,17 @@ function initializeElements() {
     collapseAllBtn = document.getElementById('collapseAllBtn');
 }
 
-// ユニークなIDを生成
-function generateUniqueId(prefix, command, type, index) {
-    return `${prefix}-${command.replace(/[^a-zA-Z0-9]/g, '_')}-${type}-${index}-${Date.now()}`;
-}
-
 // デスクトップ用カード作成
 function createDesktopCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const cardId = generateUniqueId('card-desktop', command.name, 'main', index);
-    const detailsId = generateUniqueId('details-desktop', command.name, 'content', index);
-    const iconId = generateUniqueId('icon-desktop', command.name, 'toggle', index);
-    const buttonId = generateUniqueId('button-desktop', command.name, 'toggle', index);
+    const uniqueId = `desktop-${index}`;
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" 
              data-category="${command.category}" 
-             data-command="${command.name}"
-             id="${cardId}">
+             data-command="${command.name}">
             <div class="p-4 border-b border-gray-100">
                 <div class="flex items-start justify-between">
                     <div class="flex items-center">
@@ -57,9 +48,9 @@ function createDesktopCard(command, index) {
                             </span>
                         </div>
                     </div>
-                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            id="${buttonId}">
-                        <i class="fas fa-chevron-down text-sm transform transition-transform duration-200" id="${iconId}"></i>
+                    <button class="toggle-btn text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                            data-target="details-${uniqueId}">
+                        <i class="fas fa-chevron-down text-sm transform transition-transform duration-200 toggle-icon"></i>
                     </button>
                 </div>
                 
@@ -72,7 +63,7 @@ function createDesktopCard(command, index) {
                 </div>
             </div>
             
-            <div class="details-content" id="${detailsId}">
+            <div class="details-content" id="details-${uniqueId}">
                 <div class="p-4 space-y-4">
                     <div>
                         <h4 class="font-semibold text-gray-900 mb-2 text-sm">使用例</h4>
@@ -110,16 +101,12 @@ function createMobileCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const cardId = generateUniqueId('card-mobile', command.name, 'main', index);
-    const detailsId = generateUniqueId('details-mobile', command.name, 'content', index);
-    const iconId = generateUniqueId('icon-mobile', command.name, 'toggle', index);
-    const buttonId = generateUniqueId('button-mobile', command.name, 'toggle', index);
+    const uniqueId = `mobile-${index}`;
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" 
              data-category="${command.category}" 
-             data-command="${command.name}"
-             id="${cardId}">
+             data-command="${command.name}">
             <div class="p-3">
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center">
@@ -133,9 +120,9 @@ function createMobileCard(command, index) {
                             </span>
                         </div>
                     </div>
-                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            id="${buttonId}">
-                        <i class="fas fa-chevron-down text-xs transform transition-transform duration-200" id="${iconId}"></i>
+                    <button class="toggle-btn text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                            data-target="details-${uniqueId}">
+                        <i class="fas fa-chevron-down text-xs transform transition-transform duration-200 toggle-icon"></i>
                     </button>
                 </div>
                 
@@ -147,7 +134,7 @@ function createMobileCard(command, index) {
                 </div>
             </div>
             
-            <div class="details-content" id="${detailsId}">
+            <div class="details-content" id="details-${uniqueId}">
                 <div class="px-3 pb-3 border-t border-gray-100">
                     <div class="pt-3 space-y-3">
                         <div>
@@ -179,20 +166,32 @@ function createMobileCard(command, index) {
     `;
 }
 
-// 個別のトグル機能を設定
-function setupIndividualToggle(buttonId, detailsId, iconId) {
-    const button = document.getElementById(buttonId);
-    const details = document.getElementById(detailsId);
-    const icon = document.getElementById(iconId);
+// 個別開閉のイベントハンドラー（イベント委譲使用）
+function setupToggleHandlers() {
+    // 既存のリスナーを削除
+    document.removeEventListener('click', handleToggleClick);
+    // 新しいリスナーを追加（イベント委譲）
+    document.addEventListener('click', handleToggleClick);
+}
+
+function handleToggleClick(e) {
+    // toggle-btnクラスを持つボタンがクリックされた場合のみ処理
+    const toggleBtn = e.target.closest('.toggle-btn');
+    if (!toggleBtn) return;
     
-    if (button && details && icon) {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            details.classList.toggle('expanded');
-            icon.classList.toggle('rotate-180');
-        });
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const targetId = toggleBtn.getAttribute('data-target');
+    const details = document.getElementById(targetId);
+    const icon = toggleBtn.querySelector('.toggle-icon');
+    
+    if (details && icon) {
+        details.classList.toggle('expanded');
+        icon.classList.toggle('rotate-180');
+        console.log('Toggle executed for:', targetId); // デバッグ用
+    } else {
+        console.error('Toggle elements not found:', targetId); // デバッグ用
     }
 }
 
@@ -201,7 +200,7 @@ function expandAllDetails() {
     document.querySelectorAll('.details-content').forEach(details => {
         details.classList.add('expanded');
     });
-    document.querySelectorAll('[id^="icon-"] i, [id^="icon-"]').forEach(icon => {
+    document.querySelectorAll('.toggle-icon').forEach(icon => {
         icon.classList.add('rotate-180');
     });
 }
@@ -210,7 +209,7 @@ function collapseAllDetails() {
     document.querySelectorAll('.details-content').forEach(details => {
         details.classList.remove('expanded');
     });
-    document.querySelectorAll('[id^="icon-"] i, [id^="icon-"]').forEach(icon => {
+    document.querySelectorAll('.toggle-icon').forEach(icon => {
         icon.classList.remove('rotate-180');
     });
 }
@@ -323,9 +322,7 @@ async function loadCommandsData() {
         }
         const data = await response.json();
         
-        // カテゴリ設定を動的に読み込み
         categoryConfig = data.categories || {};
-        
         return data.commands || [];
     } catch (error) {
         console.error('コマンドデータの読み込みに失敗しました:', error);
@@ -359,24 +356,11 @@ async function loadCommands() {
         const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
         commandsContainerMobile.innerHTML = mobileCards;
         
-        // 各カードに個別のイベントハンドラーを設定
-        allCommands.forEach((command, index) => {
-            // デスクトップ版
-            const desktopButtonId = generateUniqueId('button-desktop', command.name, 'toggle', index);
-            const desktopDetailsId = generateUniqueId('details-desktop', command.name, 'content', index);
-            const desktopIconId = generateUniqueId('icon-desktop', command.name, 'toggle', index);
-            setupIndividualToggle(desktopButtonId, desktopDetailsId, desktopIconId);
-            
-            // モバイル版
-            const mobileButtonId = generateUniqueId('button-mobile', command.name, 'toggle', index);
-            const mobileDetailsId = generateUniqueId('details-mobile', command.name, 'content', index);
-            const mobileIconId = generateUniqueId('icon-mobile', command.name, 'toggle', index);
-            setupIndividualToggle(mobileButtonId, mobileDetailsId, mobileIconId);
-        });
+        // イベントハンドラー設定
+        setupToggleHandlers();
         
         commandCount.textContent = `全 ${allCommands.length} コマンド`;
         console.log('コマンドが正常に読み込まれました:', allCommands.length);
-        console.log('利用可能なカテゴリ:', Object.keys(categoryConfig));
     } catch (error) {
         console.error('コマンドの読み込み処理でエラーが発生しました:', error);
     }
