@@ -1,6 +1,10 @@
 /* Custom Styles for Disnana Command Reference - Grid Independence */
 
 .command-card {
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
     transition: all 0.3s ease;
 }
 
@@ -11,17 +15,19 @@
 /* 高さ独立の2列グリッド */
 .desktop-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 1.5rem;
-    align-items: start; /* 重要: 上揃えで高さを独立 */
+    align-items: start; /* 重要: 高さの同期を防ぐ */
+    width: 100%;
 }
 
-/* 各カードを完全に独立させる */
+/* カードラッパーの完全独立化 */
 .command-card-wrapper {
     height: auto;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
     width: 100%;
+    contain: layout; /* 重要: レイアウトの影響を分離 */
 }
 
 /* ローディングアニメーション */
@@ -65,15 +71,27 @@ button:focus {
     outline-offset: 2px;
 }
 
+/* フィルタボタンのアイコン固定 */
+.filter-btn i {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+}
+
 /* レスポンシブ調整 */
 @media (max-width: 1024px) {
     .desktop-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
 }
 
 @media (max-width: 640px) {
     .command-card {
         font-size: 0.9rem;
+    }
+    
+    .desktop-grid {
+        gap: 0.75rem;
     }
 }
