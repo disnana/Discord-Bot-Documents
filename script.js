@@ -1,82 +1,87 @@
-// Disnana Command Reference Script
+// Disnana Command Reference Script - Step by Step Implementation
 
-// グローバル変数
+// ========== ステップ1: 基本変数と初期化 ==========
 let categoryConfig = {};
-let commandsContainer, commandsContainerMobile, loadingMessage, noResults;
-let searchInput, commandCount, filterButtons;
-let nameSearchBtn, fullSearchBtn, expandAllBtn, collapseAllBtn;
-let searchMode = 'name';
 let allCommands = [];
+let searchMode = 'name';
 let searchTimeout = null;
 
-// 初期化
-function initializeElements() {
-    commandsContainer = document.getElementById('commandsContainer');
-    commandsContainerMobile = document.getElementById('commandsContainerMobile');
-    loadingMessage = document.getElementById('loadingMessage');
-    noResults = document.getElementById('noResults');
-    searchInput = document.getElementById('searchInput');
-    commandCount = document.getElementById('commandCount');
-    filterButtons = document.getElementById('filterButtons');
-    nameSearchBtn = document.getElementById('nameSearchBtn');
-    fullSearchBtn = document.getElementById('fullSearchBtn');
-    expandAllBtn = document.getElementById('expandAllBtn');
-    collapseAllBtn = document.getElementById('collapseAllBtn');
+// DOM要素（使用時に取得）
+function getElements() {
+    return {
+        commandsContainer: document.getElementById('commandsContainer'),
+        commandsContainerMobile: document.getElementById('commandsContainerMobile'),
+        loadingMessage: document.getElementById('loadingMessage'),
+        noResults: document.getElementById('noResults'),
+        searchInput: document.getElementById('searchInput'),
+        commandCount: document.getElementById('commandCount'),
+        filterButtons: document.getElementById('filterButtons'),
+        nameSearchBtn: document.getElementById('nameSearchBtn'),
+        fullSearchBtn: document.getElementById('fullSearchBtn'),
+        expandAllBtn: document.getElementById('expandAllBtn'),
+        collapseAllBtn: document.getElementById('collapseAllBtn')
+    };
 }
 
-// 個別のアニメーション関数
-function animateExpand(element) {
-    element.style.display = 'block';
-    element.style.height = 'auto';
-    const height = element.offsetHeight;
-    element.style.height = '0px';
-    element.style.overflow = 'hidden';
-    element.style.transition = 'height 0.3s ease-out';
-    
-    // Force reflow
-    element.offsetHeight;
-    
-    element.style.height = height + 'px';
-    
-    setTimeout(() => {
-        element.style.height = 'auto';
-        element.style.overflow = 'visible';
-    }, 300);
+// ========== ステップ2: 単純で確実な開閉機能 ==========
+function createSimpleToggle(detailsId, iconId) {
+    return function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const details = document.getElementById(detailsId);
+        const icon = document.getElementById(iconId);
+        
+        if (!details || !icon) {
+            console.error('Elements not found:', detailsId, iconId);
+            return;
+        }
+        
+        const isHidden = details.style.display === 'none' || details.style.display === '';
+        
+        if (isHidden) {
+            // 展開
+            details.style.display = 'block';
+            details.style.opacity = '0';
+            details.style.transform = 'translateY(-10px)';
+            details.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            
+            // フレーム遅延で開始
+            requestAnimationFrame(() => {
+                details.style.opacity = '1';
+                details.style.transform = 'translateY(0)';
+            });
+            
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            // 折りたたみ
+            details.style.opacity = '0';
+            details.style.transform = 'translateY(-10px)';
+            
+            setTimeout(() => {
+                details.style.display = 'none';
+            }, 300);
+            
+            icon.style.transform = 'rotate(0deg)';
+        }
+        
+        console.log('Toggle executed:', detailsId, isHidden ? 'opened' : 'closed');
+    };
 }
 
-function animateCollapse(element) {
-    element.style.height = element.offsetHeight + 'px';
-    element.style.overflow = 'hidden';
-    element.style.transition = 'height 0.3s ease-out';
-    
-    // Force reflow
-    element.offsetHeight;
-    
-    element.style.height = '0px';
-    
-    setTimeout(() => {
-        element.style.display = 'none';
-        element.style.height = '';
-        element.style.overflow = '';
-        element.style.transition = '';
-    }, 300);
-}
-
-// デスクトップ用カード作成
+// ========== ステップ3: シンプルなカード生成 ==========
 function createDesktopCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const cardId = `desktop-card-${index}`;
-    const detailsId = `desktop-details-${index}`;
-    const buttonId = `desktop-btn-${index}`;
-    const iconId = `desktop-icon-${index}`;
+    const detailsId = `desktop_details_${index}`;
+    const iconId = `desktop_icon_${index}`;
+    const buttonId = `desktop_button_${index}`;
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" 
              data-category="${command.category}" 
-             data-command="${command.name}"
-             id="${cardId}">
+             data-command="${command.name}">
             <div class="p-4 border-b border-gray-100">
                 <div class="flex items-start justify-between">
                     <div class="flex items-center">
@@ -92,7 +97,9 @@ function createDesktopCard(command, index) {
                     </div>
                     <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
                             id="${buttonId}">
-                        <i class="fas fa-chevron-down text-sm transform transition-transform duration-200" id="${iconId}"></i>
+                        <i class="fas fa-chevron-down text-sm transition-transform duration-200" 
+                           id="${iconId}" 
+                           style="transform: rotate(0deg);"></i>
                     </button>
                 </div>
                 
@@ -138,21 +145,18 @@ function createDesktopCard(command, index) {
     `;
 }
 
-// モバイル用カード作成
 function createMobileCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const cardId = `mobile-card-${index}`;
-    const detailsId = `mobile-details-${index}`;
-    const buttonId = `mobile-btn-${index}`;
-    const iconId = `mobile-icon-${index}`;
+    const detailsId = `mobile_details_${index}`;
+    const iconId = `mobile_icon_${index}`;
+    const buttonId = `mobile_button_${index}`;
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" 
              data-category="${command.category}" 
-             data-command="${command.name}"
-             id="${cardId}">
+             data-command="${command.name}">
             <div class="p-3">
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center">
@@ -168,7 +172,9 @@ function createMobileCard(command, index) {
                     </div>
                     <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
                             id="${buttonId}">
-                        <i class="fas fa-chevron-down text-xs transform transition-transform duration-200" id="${iconId}"></i>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200" 
+                           id="${iconId}"
+                           style="transform: rotate(0deg);"></i>
                     </button>
                 </div>
                 
@@ -212,89 +218,27 @@ function createMobileCard(command, index) {
     `;
 }
 
-// 個別のトグル機能を設定（直接イベントリスナー）
-function setupIndividualToggle(buttonId, detailsId, iconId) {
-    const button = document.getElementById(buttonId);
-    const details = document.getElementById(detailsId);
-    const icon = document.getElementById(iconId);
-    
-    if (button && details && icon) {
-        // 既存のリスナーを削除
-        button.onclick = null;
+// ========== ステップ4: 効率的なイベントハンドラー設定 ==========
+function setupToggleHandlers() {
+    allCommands.forEach((command, index) => {
+        // デスクトップ版
+        const desktopButton = document.getElementById(`desktop_button_${index}`);
+        if (desktopButton) {
+            desktopButton.onclick = createSimpleToggle(`desktop_details_${index}`, `desktop_icon_${index}`);
+        }
         
-        // 新しいリスナーを追加
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const isVisible = details.style.display !== 'none';
-            
-            if (isVisible) {
-                // 折りたたみ
-                animateCollapse(details);
-                icon.classList.remove('rotate-180');
-                console.log('Collapsed:', detailsId);
-            } else {
-                // 展開
-                animateExpand(details);
-                icon.classList.add('rotate-180');
-                console.log('Expanded:', detailsId);
-            }
-        });
-        
-        console.log('Toggle handler set for:', buttonId, detailsId, iconId);
-    } else {
-        console.error('Elements not found:', buttonId, detailsId, iconId);
-    }
+        // モバイル版  
+        const mobileButton = document.getElementById(`mobile_button_${index}`);
+        if (mobileButton) {
+            mobileButton.onclick = createSimpleToggle(`mobile_details_${index}`, `mobile_icon_${index}`);
+        }
+    });
+    console.log('Toggle handlers set for', allCommands.length, 'commands');
 }
 
-// 全体展開/折りたたみ機能
-function expandAllDetails() {
-    // デスクトップ
-    allCommands.forEach((_, index) => {
-        const details = document.getElementById(`desktop-details-${index}`);
-        const icon = document.getElementById(`desktop-icon-${index}`);
-        if (details && details.style.display === 'none') {
-            animateExpand(details);
-            if (icon) icon.classList.add('rotate-180');
-        }
-    });
-    
-    // モバイル
-    allCommands.forEach((_, index) => {
-        const details = document.getElementById(`mobile-details-${index}`);
-        const icon = document.getElementById(`mobile-icon-${index}`);
-        if (details && details.style.display === 'none') {
-            animateExpand(details);
-            if (icon) icon.classList.add('rotate-180');
-        }
-    });
-}
-
-function collapseAllDetails() {
-    // デスクトップ
-    allCommands.forEach((_, index) => {
-        const details = document.getElementById(`desktop-details-${index}`);
-        const icon = document.getElementById(`desktop-icon-${index}`);
-        if (details && details.style.display !== 'none') {
-            animateCollapse(details);
-            if (icon) icon.classList.remove('rotate-180');
-        }
-    });
-    
-    // モバイル
-    allCommands.forEach((_, index) => {
-        const details = document.getElementById(`mobile-details-${index}`);
-        const icon = document.getElementById(`mobile-icon-${index}`);
-        if (details && details.style.display !== 'none') {
-            animateCollapse(details);
-            if (icon) icon.classList.remove('rotate-180');
-        }
-    });
-}
-
-// フィルターボタン作成
+// ========== ステップ5: その他の機能（シンプル版） ==========
 function createFilterButtons() {
+    const elements = getElements();
     const categories = [...new Set(allCommands.map(cmd => cmd.category))];
     
     categories.forEach(category => {
@@ -304,37 +248,37 @@ function createFilterButtons() {
             button.className = 'filter-btn bg-gray-200 text-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:bg-gray-300';
             button.innerHTML = `<i class="${config.icon} mr-1 sm:mr-2"></i>${config.name}`;
             button.onclick = () => filterCommands(category);
-            filterButtons.appendChild(button);
+            elements.filterButtons.appendChild(button);
         }
     });
 }
 
-// 検索モード切り替え
 function toggleSearchMode(mode) {
+    const elements = getElements();
     searchMode = mode;
     
     if (mode === 'name') {
-        nameSearchBtn.classList.add('bg-white', 'text-discord');
-        nameSearchBtn.classList.remove('text-white');
-        fullSearchBtn.classList.remove('bg-white', 'text-discord');
-        fullSearchBtn.classList.add('text-white');
-        searchInput.placeholder = 'コマンド名で検索...';
+        elements.nameSearchBtn.classList.add('bg-white', 'text-discord');
+        elements.nameSearchBtn.classList.remove('text-white');
+        elements.fullSearchBtn.classList.remove('bg-white', 'text-discord');
+        elements.fullSearchBtn.classList.add('text-white');
+        elements.searchInput.placeholder = 'コマンド名で検索...';
     } else {
-        fullSearchBtn.classList.add('bg-white', 'text-discord');
-        fullSearchBtn.classList.remove('text-white');
-        nameSearchBtn.classList.remove('bg-white', 'text-discord');
-        nameSearchBtn.classList.add('text-white');
-        searchInput.placeholder = '全文検索...';
+        elements.fullSearchBtn.classList.add('bg-white', 'text-discord');
+        elements.fullSearchBtn.classList.remove('text-white');
+        elements.nameSearchBtn.classList.remove('bg-white', 'text-discord');
+        elements.nameSearchBtn.classList.add('text-white');
+        elements.searchInput.placeholder = '全文検索...';
     }
     
-    if (searchInput.value) {
+    if (elements.searchInput.value) {
         performSearch();
     }
 }
 
-// 検索実行
 function performSearch() {
-    const searchTerm = searchInput.value.toLowerCase();
+    const elements = getElements();
+    const searchTerm = elements.searchInput.value.toLowerCase();
     const commandCards = document.querySelectorAll('.command-card');
     let visibleCards = 0;
 
@@ -357,17 +301,17 @@ function performSearch() {
         }
     });
 
-    noResults.style.display = visibleCards === 0 ? 'block' : 'none';
+    elements.noResults.style.display = visibleCards === 0 ? 'block' : 'none';
 }
 
-// debounce付き検索
 function debouncedSearch() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(performSearch, 150);
 }
 
-// フィルター機能
 function filterCommands(category) {
+    const elements = getElements();
+    
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('bg-discord', 'text-white');
         btn.classList.add('bg-gray-200', 'text-gray-700');
@@ -388,12 +332,14 @@ function filterCommands(category) {
         }
     });
 
-    noResults.style.display = visibleCards === 0 ? 'block' : 'none';
-    searchInput.value = '';
+    elements.noResults.style.display = visibleCards === 0 ? 'block' : 'none';
+    elements.searchInput.value = '';
 }
 
-// JSONデータ読み込み
+// ========== ステップ6: データ読み込み（効率化版） ==========
 async function loadCommandsData() {
+    const elements = getElements();
+    
     try {
         const response = await fetch('commands.json');
         if (!response.ok) {
@@ -406,7 +352,7 @@ async function loadCommandsData() {
     } catch (error) {
         console.error('コマンドデータの読み込みに失敗しました:', error);
         
-        loadingMessage.innerHTML = `
+        elements.loadingMessage.innerHTML = `
             <i class="fas fa-exclamation-triangle text-red-500 text-2xl sm:text-4xl mb-2 sm:mb-4"></i>
             <h3 class="text-lg sm:text-xl font-semibold text-red-600 mb-1 sm:mb-2">データの読み込みに失敗しました</h3>
             <p class="text-gray-500 text-sm sm:text-base">ページを再読み込みしてください</p>
@@ -415,8 +361,9 @@ async function loadCommandsData() {
     }
 }
 
-// コマンド読み込みと表示
 async function loadCommands() {
+    const elements = getElements();
+    
     try {
         allCommands = await loadCommandsData();
         
@@ -424,40 +371,39 @@ async function loadCommands() {
             return;
         }
 
-        loadingMessage.style.display = 'none';
-        
-        createFilterButtons();
+        elements.loadingMessage.style.display = 'none';
         
         // カード生成
         const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
-        commandsContainer.innerHTML = desktopCards;
+        elements.commandsContainer.innerHTML = desktopCards;
         
         const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
-        commandsContainerMobile.innerHTML = mobileCards;
+        elements.commandsContainerMobile.innerHTML = mobileCards;
         
-        // 各カードに個別のイベントハンドラーを設定
-        allCommands.forEach((command, index) => {
-            // デスクトップ版
-            setupIndividualToggle(`desktop-btn-${index}`, `desktop-details-${index}`, `desktop-icon-${index}`);
-            
-            // モバイル版
-            setupIndividualToggle(`mobile-btn-${index}`, `mobile-details-${index}`, `mobile-icon-${index}`);
-        });
+        // フィルターボタン作成
+        createFilterButtons();
         
-        commandCount.textContent = `全 ${allCommands.length} コマンド`;
+        // イベントハンドラー設定（最後に実行）
+        setupToggleHandlers();
+        
+        elements.commandCount.textContent = `全 ${allCommands.length} コマンド`;
         console.log('コマンドが正常に読み込まれました:', allCommands.length);
     } catch (error) {
         console.error('コマンドの読み込み処理でエラーが発生しました:', error);
     }
 }
 
-// イベントリスナー設定
+// ========== ステップ7: イベントリスナー設定 ==========
 function setupEventListeners() {
-    nameSearchBtn.addEventListener('click', () => toggleSearchMode('name'));
-    fullSearchBtn.addEventListener('click', () => toggleSearchMode('full'));
-    searchInput.addEventListener('input', debouncedSearch);
-    expandAllBtn.addEventListener('click', expandAllDetails);
-    collapseAllBtn.addEventListener('click', collapseAllDetails);
+    const elements = getElements();
+    
+    elements.nameSearchBtn.addEventListener('click', () => toggleSearchMode('name'));
+    elements.fullSearchBtn.addEventListener('click', () => toggleSearchMode('full'));
+    elements.searchInput.addEventListener('input', debouncedSearch);
+    
+    // 全体展開/折りたたみは後で実装
+    elements.expandAllBtn.addEventListener('click', () => console.log('Expand all - TODO'));
+    elements.collapseAllBtn.addEventListener('click', () => console.log('Collapse all - TODO'));
     
     const backToTopBtn = document.getElementById('backToTop');
     window.addEventListener('scroll', () => {
@@ -472,9 +418,9 @@ function setupEventListeners() {
     });
 }
 
-// 初期化処理
+// ========== ステップ8: 初期化 ==========
 document.addEventListener('DOMContentLoaded', function() {
-    initializeElements();
+    console.log('Initializing Disnana Command Reference...');
     setupEventListeners();
     loadCommands();
 });
