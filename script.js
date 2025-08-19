@@ -1,12 +1,10 @@
-// Disnana Command Reference Script - Step by Step Implementation
+// Disnana Command Reference Script - Independent Container Version
 
-// ========== ステップ1: 基本変数と初期化 ==========
 let categoryConfig = {};
 let allCommands = [];
 let searchMode = 'name';
 let searchTimeout = null;
 
-// DOM要素（使用時に取得）
 function getElements() {
     return {
         commandsContainer: document.getElementById('commandsContainer'),
@@ -23,8 +21,167 @@ function getElements() {
     };
 }
 
-// ========== ステップ2: 単純で確実な開閉機能 ==========
-function createSimpleToggle(detailsId, iconId) {
+// ========== ステップ2: 完全独立したカード作成 ==========
+function createDesktopCard(command, index) {
+    const config = categoryConfig[command.category];
+    if (!config) return '';
+    
+    const containerId = `desktop_container_${index}`;
+    const detailsId = `desktop_details_${index}`;
+    const iconId = `desktop_icon_${index}`;
+    const buttonId = `desktop_button_${index}`;
+    
+    return `
+        <div id="${containerId}" class="command-card-container" style="width: 100%; margin-bottom: 1.5rem;">
+            <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" 
+                 data-category="${command.category}" 
+                 data-command="${command.name}">
+                <div class="p-4 border-b border-gray-100">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 ${config.bgColor} rounded-lg flex items-center justify-center mr-3">
+                                <i class="${config.icon} ${config.textColor} text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-900">${command.name}</h3>
+                                <span class="inline-block px-2 py-1 text-xs font-medium ${config.bgColor} ${config.textColor} rounded-full mt-1">
+                                    ${config.name}
+                                </span>
+                            </div>
+                        </div>
+                        <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                                id="${buttonId}">
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-200" 
+                               id="${iconId}" 
+                               style="transform: rotate(0deg);"></i>
+                        </button>
+                    </div>
+                    
+                    <p class="text-gray-700 mt-3 mb-2">${command.description}</p>
+                    
+                    <div class="flex flex-wrap gap-3 text-xs text-gray-500">
+                        <span><i class="fas fa-terminal mr-1"></i>${command.usage}</span>
+                        <span><i class="fas fa-shield-alt mr-1"></i>${command.permissions}</span>
+                        ${command.cooldown ? `<span><i class="fas fa-clock mr-1"></i>${command.cooldown}</span>` : ''}
+                    </div>
+                </div>
+                
+                <!-- 完全独立した詳細セクション -->
+                <div id="${detailsId}" 
+                     style="display: none; width: 100%; box-sizing: border-box; position: relative;">
+                    <div class="p-4 space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2 text-sm">使用例</h4>
+                            <div class="space-y-2">
+                                ${command.examples.map(example => `
+                                    <div class="bg-gray-50 p-2 rounded text-xs">
+                                        <div class="text-gray-600 mb-1">${example.description}:</div>
+                                        <code class="text-green-600 font-mono">${example.command}</code>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        ${command.notes && command.notes.length > 0 ? `
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-2 text-sm">注意事項・Tips</h4>
+                                <div class="space-y-1">
+                                    ${command.notes.map(note => `
+                                        <div class="text-xs text-gray-600 flex items-start">
+                                            <i class="fas fa-lightbulb ${config.textColor} mr-1 mt-0.5 text-xs"></i>
+                                            <span>${note}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createMobileCard(command, index) {
+    const config = categoryConfig[command.category];
+    if (!config) return '';
+    
+    const containerId = `mobile_container_${index}`;
+    const detailsId = `mobile_details_${index}`;
+    const iconId = `mobile_icon_${index}`;
+    const buttonId = `mobile_button_${index}`;
+    
+    return `
+        <div id="${containerId}" class="command-card-container" style="width: 100%; margin-bottom: 1rem;">
+            <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" 
+                 data-category="${command.category}" 
+                 data-command="${command.name}">
+                <div class="p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 ${config.bgColor} rounded-md flex items-center justify-center mr-2">
+                                <i class="${config.icon} ${config.textColor} text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-base text-gray-900">${command.name}</h3>
+                                <span class="inline-block px-1.5 py-0.5 text-xs font-medium ${config.bgColor} ${config.textColor} rounded">
+                                    ${config.name}
+                                </span>
+                            </div>
+                        </div>
+                        <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                                id="${buttonId}">
+                            <i class="fas fa-chevron-down text-xs transition-transform duration-200" 
+                               id="${iconId}"
+                               style="transform: rotate(0deg);"></i>
+                        </button>
+                    </div>
+                    
+                    <p class="text-gray-700 text-sm mb-2">${command.description}</p>
+                    
+                    <div class="text-xs text-gray-500 space-y-1">
+                        <div><i class="fas fa-terminal mr-1 w-3"></i>${command.usage}</div>
+                        <div><i class="fas fa-shield-alt mr-1 w-3"></i>${command.permissions}</div>
+                    </div>
+                </div>
+                
+                <!-- 完全独立した詳細セクション -->
+                <div id="${detailsId}" 
+                     style="display: none; width: 100%; box-sizing: border-box; position: relative;">
+                    <div class="px-3 pb-3 border-t border-gray-100">
+                        <div class="pt-3 space-y-3">
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-1 text-sm">使用例</h4>
+                                <div class="space-y-1">
+                                    ${command.examples.slice(0, 2).map(example => `
+                                        <div class="bg-gray-50 p-2 rounded text-xs">
+                                            <div class="text-gray-600 mb-1">${example.description}</div>
+                                            <code class="text-green-600 font-mono">${example.command}</code>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            ${command.notes && command.notes.length > 0 ? `
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-1 text-sm">Tips</h4>
+                                    <div class="space-y-1">
+                                        ${command.notes.slice(0, 3).map(note => `
+                                            <div class="text-xs text-gray-600">${note}</div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ========== ステップ3: 完全分離された開閉機能 ==========
+function createIndependentToggle(detailsId, iconId) {
     return function(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -37,206 +194,155 @@ function createSimpleToggle(detailsId, iconId) {
             return;
         }
         
-        const isHidden = details.style.display === 'none' || details.style.display === '';
+        const isHidden = details.style.display === 'none';
         
         if (isHidden) {
             // 展開
             details.style.display = 'block';
             details.style.opacity = '0';
-            details.style.transform = 'translateY(-10px)';
-            details.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            details.style.transition = 'opacity 0.2s ease';
             
-            // フレーム遅延で開始
             requestAnimationFrame(() => {
                 details.style.opacity = '1';
-                details.style.transform = 'translateY(0)';
             });
             
             icon.style.transform = 'rotate(180deg)';
+            console.log('Opened:', detailsId);
         } else {
             // 折りたたみ
             details.style.opacity = '0';
-            details.style.transform = 'translateY(-10px)';
             
             setTimeout(() => {
                 details.style.display = 'none';
-            }, 300);
+                details.style.opacity = '';
+            }, 200);
             
             icon.style.transform = 'rotate(0deg)';
+            console.log('Closed:', detailsId);
         }
-        
-        console.log('Toggle executed:', detailsId, isHidden ? 'opened' : 'closed');
     };
 }
 
-// ========== ステップ3: シンプルなカード生成 ==========
-function createDesktopCard(command, index) {
-    const config = categoryConfig[command.category];
-    if (!config) return '';
+// ========== ステップ4: 独立コンテナでの配置 ==========
+async function loadCommands() {
+    const elements = getElements();
     
-    const detailsId = `desktop_details_${index}`;
-    const iconId = `desktop_icon_${index}`;
-    const buttonId = `desktop_button_${index}`;
-    
-    return `
-        <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" 
-             data-category="${command.category}" 
-             data-command="${command.name}">
-            <div class="p-4 border-b border-gray-100">
-                <div class="flex items-start justify-between">
-                    <div class="flex items-center">
-                        <div class="w-10 h-10 ${config.bgColor} rounded-lg flex items-center justify-center mr-3">
-                            <i class="${config.icon} ${config.textColor} text-lg"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-lg text-gray-900">${command.name}</h3>
-                            <span class="inline-block px-2 py-1 text-xs font-medium ${config.bgColor} ${config.textColor} rounded-full mt-1">
-                                ${config.name}
-                            </span>
-                        </div>
-                    </div>
-                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            id="${buttonId}">
-                        <i class="fas fa-chevron-down text-sm transition-transform duration-200" 
-                           id="${iconId}" 
-                           style="transform: rotate(0deg);"></i>
-                    </button>
-                </div>
-                
-                <p class="text-gray-700 mt-3 mb-2">${command.description}</p>
-                
-                <div class="flex flex-wrap gap-3 text-xs text-gray-500">
-                    <span><i class="fas fa-terminal mr-1"></i>${command.usage}</span>
-                    <span><i class="fas fa-shield-alt mr-1"></i>${command.permissions}</span>
-                    ${command.cooldown ? `<span><i class="fas fa-clock mr-1"></i>${command.cooldown}</span>` : ''}
-                </div>
-            </div>
-            
-            <div id="${detailsId}" style="display: none;">
-                <div class="p-4 space-y-4">
-                    <div>
-                        <h4 class="font-semibold text-gray-900 mb-2 text-sm">使用例</h4>
-                        <div class="space-y-2">
-                            ${command.examples.map(example => `
-                                <div class="bg-gray-50 p-2 rounded text-xs">
-                                    <div class="text-gray-600 mb-1">${example.description}:</div>
-                                    <code class="text-green-600 font-mono">${example.command}</code>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    ${command.notes && command.notes.length > 0 ? `
-                        <div>
-                            <h4 class="font-semibold text-gray-900 mb-2 text-sm">注意事項・Tips</h4>
-                            <div class="space-y-1">
-                                ${command.notes.map(note => `
-                                    <div class="text-xs text-gray-600 flex items-start">
-                                        <i class="fas fa-lightbulb ${config.textColor} mr-1 mt-0.5 text-xs"></i>
-                                        <span>${note}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        </div>
-    `;
+    try {
+        allCommands = await loadCommandsData();
+        
+        if (allCommands.length === 0) {
+            return;
+        }
+
+        elements.loadingMessage.style.display = 'none';
+        
+        // デスクトップ版: 独立したコンテナを順番に配置
+        const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
+        elements.commandsContainer.innerHTML = desktopCards;
+        elements.commandsContainer.style.display = 'block'; // グリッドではなく通常のブロック
+        
+        // モバイル版: 独立したコンテナを順番に配置
+        const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
+        elements.commandsContainerMobile.innerHTML = mobileCards;
+        elements.commandsContainerMobile.style.display = 'block'; // グリッドではなく通常のブロック
+        
+        createFilterButtons();
+        setupToggleHandlers();
+        
+        elements.commandCount.textContent = `全 ${allCommands.length} コマンド`;
+        console.log('独立コンテナでコマンド読み込み完了:', allCommands.length);
+    } catch (error) {
+        console.error('エラー:', error);
+    }
 }
 
-function createMobileCard(command, index) {
-    const config = categoryConfig[command.category];
-    if (!config) return '';
-    
-    const detailsId = `mobile_details_${index}`;
-    const iconId = `mobile_icon_${index}`;
-    const buttonId = `mobile_button_${index}`;
-    
-    return `
-        <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" 
-             data-category="${command.category}" 
-             data-command="${command.name}">
-            <div class="p-3">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 ${config.bgColor} rounded-md flex items-center justify-center mr-2">
-                            <i class="${config.icon} ${config.textColor} text-sm"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-base text-gray-900">${command.name}</h3>
-                            <span class="inline-block px-1.5 py-0.5 text-xs font-medium ${config.bgColor} ${config.textColor} rounded">
-                                ${config.name}
-                            </span>
-                        </div>
-                    </div>
-                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            id="${buttonId}">
-                        <i class="fas fa-chevron-down text-xs transition-transform duration-200" 
-                           id="${iconId}"
-                           style="transform: rotate(0deg);"></i>
-                    </button>
-                </div>
-                
-                <p class="text-gray-700 text-sm mb-2">${command.description}</p>
-                
-                <div class="text-xs text-gray-500 space-y-1">
-                    <div><i class="fas fa-terminal mr-1 w-3"></i>${command.usage}</div>
-                    <div><i class="fas fa-shield-alt mr-1 w-3"></i>${command.permissions}</div>
-                </div>
-            </div>
-            
-            <div id="${detailsId}" style="display: none;">
-                <div class="px-3 pb-3 border-t border-gray-100">
-                    <div class="pt-3 space-y-3">
-                        <div>
-                            <h4 class="font-semibold text-gray-900 mb-1 text-sm">使用例</h4>
-                            <div class="space-y-1">
-                                ${command.examples.slice(0, 2).map(example => `
-                                    <div class="bg-gray-50 p-2 rounded text-xs">
-                                        <div class="text-gray-600 mb-1">${example.description}</div>
-                                        <code class="text-green-600 font-mono">${example.command}</code>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        
-                        ${command.notes && command.notes.length > 0 ? `
-                            <div>
-                                <h4 class="font-semibold text-gray-900 mb-1 text-sm">Tips</h4>
-                                <div class="space-y-1">
-                                    ${command.notes.slice(0, 3).map(note => `
-                                        <div class="text-xs text-gray-600">${note}</div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// ========== ステップ4: 効率的なイベントハンドラー設定 ==========
 function setupToggleHandlers() {
     allCommands.forEach((command, index) => {
         // デスクトップ版
         const desktopButton = document.getElementById(`desktop_button_${index}`);
         if (desktopButton) {
-            desktopButton.onclick = createSimpleToggle(`desktop_details_${index}`, `desktop_icon_${index}`);
+            desktopButton.onclick = createIndependentToggle(`desktop_details_${index}`, `desktop_icon_${index}`);
         }
         
         // モバイル版  
         const mobileButton = document.getElementById(`mobile_button_${index}`);
         if (mobileButton) {
-            mobileButton.onclick = createSimpleToggle(`mobile_details_${index}`, `mobile_icon_${index}`);
+            mobileButton.onclick = createIndependentToggle(`mobile_details_${index}`, `mobile_icon_${index}`);
         }
     });
-    console.log('Toggle handlers set for', allCommands.length, 'commands');
+    console.log('独立トグル機能設定完了');
 }
 
-// ========== ステップ5: その他の機能（シンプル版） ==========
+// ========== ステップ5: 全体開閉機能の実装 ==========
+function expandAllDetails() {
+    allCommands.forEach((_, index) => {
+        // デスクトップ版
+        const desktopDetails = document.getElementById(`desktop_details_${index}`);
+        const desktopIcon = document.getElementById(`desktop_icon_${index}`);
+        if (desktopDetails && desktopDetails.style.display === 'none') {
+            desktopDetails.style.display = 'block';
+            desktopDetails.style.opacity = '1';
+            if (desktopIcon) desktopIcon.style.transform = 'rotate(180deg)';
+        }
+        
+        // モバイル版
+        const mobileDetails = document.getElementById(`mobile_details_${index}`);
+        const mobileIcon = document.getElementById(`mobile_icon_${index}`);
+        if (mobileDetails && mobileDetails.style.display === 'none') {
+            mobileDetails.style.display = 'block';
+            mobileDetails.style.opacity = '1';
+            if (mobileIcon) mobileIcon.style.transform = 'rotate(180deg)';
+        }
+    });
+    console.log('全て展開完了');
+}
+
+function collapseAllDetails() {
+    allCommands.forEach((_, index) => {
+        // デスクトップ版
+        const desktopDetails = document.getElementById(`desktop_details_${index}`);
+        const desktopIcon = document.getElementById(`desktop_icon_${index}`);
+        if (desktopDetails && desktopDetails.style.display !== 'none') {
+            desktopDetails.style.display = 'none';
+            if (desktopIcon) desktopIcon.style.transform = 'rotate(0deg)';
+        }
+        
+        // モバイル版
+        const mobileDetails = document.getElementById(`mobile_details_${index}`);
+        const mobileIcon = document.getElementById(`mobile_icon_${index}`);
+        if (mobileDetails && mobileDetails.style.display !== 'none') {
+            mobileDetails.style.display = 'none';
+            if (mobileIcon) mobileIcon.style.transform = 'rotate(0deg)';
+        }
+    });
+    console.log('全て折りたたみ完了');
+}
+
+// ========== 他の機能（変更なし） ==========
+async function loadCommandsData() {
+    const elements = getElements();
+    
+    try {
+        const response = await fetch('commands.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        categoryConfig = data.categories || {};
+        return data.commands || [];
+    } catch (error) {
+        console.error('コマンドデータの読み込みに失敗しました:', error);
+        
+        elements.loadingMessage.innerHTML = `
+            <i class="fas fa-exclamation-triangle text-red-500 text-2xl sm:text-4xl mb-2 sm:mb-4"></i>
+            <h3 class="text-lg sm:text-xl font-semibold text-red-600 mb-1 sm:mb-2">データの読み込みに失敗しました</h3>
+            <p class="text-gray-500 text-sm sm:text-base">ページを再読み込みしてください</p>
+        `;
+        return [];
+    }
+}
+
 function createFilterButtons() {
     const elements = getElements();
     const categories = [...new Set(allCommands.map(cmd => cmd.category))];
@@ -279,25 +385,26 @@ function toggleSearchMode(mode) {
 function performSearch() {
     const elements = getElements();
     const searchTerm = elements.searchInput.value.toLowerCase();
-    const commandCards = document.querySelectorAll('.command-card');
+    const commandContainers = document.querySelectorAll('.command-card-container');
     let visibleCards = 0;
 
-    commandCards.forEach(card => {
+    commandContainers.forEach(container => {
+        const card = container.querySelector('.command-card');
         const commandName = card.dataset.command.toLowerCase();
         let shouldShow = false;
         
         if (searchMode === 'name') {
             shouldShow = commandName.includes(searchTerm);
         } else {
-            const cardText = card.textContent.toLowerCase();
+            const cardText = container.textContent.toLowerCase();
             shouldShow = cardText.includes(searchTerm);
         }
         
         if (shouldShow) {
-            card.style.display = 'block';
+            container.style.display = 'block';
             visibleCards++;
         } else {
-            card.style.display = 'none';
+            container.style.display = 'none';
         }
     });
 
@@ -320,15 +427,16 @@ function filterCommands(category) {
     event.target.classList.remove('bg-gray-200', 'text-gray-700');
     event.target.classList.add('bg-discord', 'text-white');
 
-    const commandCards = document.querySelectorAll('.command-card');
+    const commandContainers = document.querySelectorAll('.command-card-container');
     let visibleCards = 0;
     
-    commandCards.forEach(card => {
+    commandContainers.forEach(container => {
+        const card = container.querySelector('.command-card');
         if (category === 'all' || card.dataset.category === category) {
-            card.style.display = 'block';
+            container.style.display = 'block';
             visibleCards++;
         } else {
-            card.style.display = 'none';
+            container.style.display = 'none';
         }
     });
 
@@ -336,64 +444,6 @@ function filterCommands(category) {
     elements.searchInput.value = '';
 }
 
-// ========== ステップ6: データ読み込み（効率化版） ==========
-async function loadCommandsData() {
-    const elements = getElements();
-    
-    try {
-        const response = await fetch('commands.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        
-        categoryConfig = data.categories || {};
-        return data.commands || [];
-    } catch (error) {
-        console.error('コマンドデータの読み込みに失敗しました:', error);
-        
-        elements.loadingMessage.innerHTML = `
-            <i class="fas fa-exclamation-triangle text-red-500 text-2xl sm:text-4xl mb-2 sm:mb-4"></i>
-            <h3 class="text-lg sm:text-xl font-semibold text-red-600 mb-1 sm:mb-2">データの読み込みに失敗しました</h3>
-            <p class="text-gray-500 text-sm sm:text-base">ページを再読み込みしてください</p>
-        `;
-        return [];
-    }
-}
-
-async function loadCommands() {
-    const elements = getElements();
-    
-    try {
-        allCommands = await loadCommandsData();
-        
-        if (allCommands.length === 0) {
-            return;
-        }
-
-        elements.loadingMessage.style.display = 'none';
-        
-        // カード生成
-        const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
-        elements.commandsContainer.innerHTML = desktopCards;
-        
-        const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
-        elements.commandsContainerMobile.innerHTML = mobileCards;
-        
-        // フィルターボタン作成
-        createFilterButtons();
-        
-        // イベントハンドラー設定（最後に実行）
-        setupToggleHandlers();
-        
-        elements.commandCount.textContent = `全 ${allCommands.length} コマンド`;
-        console.log('コマンドが正常に読み込まれました:', allCommands.length);
-    } catch (error) {
-        console.error('コマンドの読み込み処理でエラーが発生しました:', error);
-    }
-}
-
-// ========== ステップ7: イベントリスナー設定 ==========
 function setupEventListeners() {
     const elements = getElements();
     
@@ -401,9 +451,9 @@ function setupEventListeners() {
     elements.fullSearchBtn.addEventListener('click', () => toggleSearchMode('full'));
     elements.searchInput.addEventListener('input', debouncedSearch);
     
-    // 全体展開/折りたたみは後で実装
-    elements.expandAllBtn.addEventListener('click', () => console.log('Expand all - TODO'));
-    elements.collapseAllBtn.addEventListener('click', () => console.log('Collapse all - TODO'));
+    // 全体開閉機能を実装
+    elements.expandAllBtn.addEventListener('click', expandAllDetails);
+    elements.collapseAllBtn.addEventListener('click', collapseAllDetails);
     
     const backToTopBtn = document.getElementById('backToTop');
     window.addEventListener('scroll', () => {
@@ -418,9 +468,8 @@ function setupEventListeners() {
     });
 }
 
-// ========== ステップ8: 初期化 ==========
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing Disnana Command Reference...');
+    console.log('独立コンテナ版 初期化開始...');
     setupEventListeners();
     loadCommands();
 });
