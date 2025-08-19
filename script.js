@@ -24,17 +24,59 @@ function initializeElements() {
     collapseAllBtn = document.getElementById('collapseAllBtn');
 }
 
+// 個別のアニメーション関数
+function animateExpand(element) {
+    element.style.display = 'block';
+    element.style.height = 'auto';
+    const height = element.offsetHeight;
+    element.style.height = '0px';
+    element.style.overflow = 'hidden';
+    element.style.transition = 'height 0.3s ease-out';
+    
+    // Force reflow
+    element.offsetHeight;
+    
+    element.style.height = height + 'px';
+    
+    setTimeout(() => {
+        element.style.height = 'auto';
+        element.style.overflow = 'visible';
+    }, 300);
+}
+
+function animateCollapse(element) {
+    element.style.height = element.offsetHeight + 'px';
+    element.style.overflow = 'hidden';
+    element.style.transition = 'height 0.3s ease-out';
+    
+    // Force reflow
+    element.offsetHeight;
+    
+    element.style.height = '0px';
+    
+    setTimeout(() => {
+        element.style.display = 'none';
+        element.style.height = '';
+        element.style.overflow = '';
+        element.style.transition = '';
+    }, 300);
+}
+
 // デスクトップ用カード作成
 function createDesktopCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const uniqueId = `desktop-${index}-${Date.now()}`;
+    const cardId = `desktop-card-${index}`;
+    const detailsId = `desktop-details-${index}`;
+    const buttonId = `desktop-btn-${index}`;
+    const iconId = `desktop-icon-${index}`;
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" 
              data-category="${command.category}" 
-             data-command="${command.name}">
+             data-command="${command.name}"
+             id="${cardId}">
             <div class="p-4 border-b border-gray-100">
                 <div class="flex items-start justify-between">
                     <div class="flex items-center">
@@ -48,9 +90,9 @@ function createDesktopCard(command, index) {
                             </span>
                         </div>
                     </div>
-                    <button class="toggle-btn text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            data-target="${uniqueId}">
-                        <i class="fas fa-chevron-down text-sm transform transition-transform duration-200 toggle-icon"></i>
+                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                            id="${buttonId}">
+                        <i class="fas fa-chevron-down text-sm transform transition-transform duration-200" id="${iconId}"></i>
                     </button>
                 </div>
                 
@@ -63,9 +105,7 @@ function createDesktopCard(command, index) {
                 </div>
             </div>
             
-            <div class="details-content" 
-                 id="${uniqueId}"
-                 style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;">
+            <div id="${detailsId}" style="display: none;">
                 <div class="p-4 space-y-4">
                     <div>
                         <h4 class="font-semibold text-gray-900 mb-2 text-sm">使用例</h4>
@@ -103,12 +143,16 @@ function createMobileCard(command, index) {
     const config = categoryConfig[command.category];
     if (!config) return '';
     
-    const uniqueId = `mobile-${index}-${Date.now()}`;
+    const cardId = `mobile-card-${index}`;
+    const detailsId = `mobile-details-${index}`;
+    const buttonId = `mobile-btn-${index}`;
+    const iconId = `mobile-icon-${index}`;
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" 
              data-category="${command.category}" 
-             data-command="${command.name}">
+             data-command="${command.name}"
+             id="${cardId}">
             <div class="p-3">
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center">
@@ -122,9 +166,9 @@ function createMobileCard(command, index) {
                             </span>
                         </div>
                     </div>
-                    <button class="toggle-btn text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            data-target="${uniqueId}">
-                        <i class="fas fa-chevron-down text-xs transform transition-transform duration-200 toggle-icon"></i>
+                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                            id="${buttonId}">
+                        <i class="fas fa-chevron-down text-xs transform transition-transform duration-200" id="${iconId}"></i>
                     </button>
                 </div>
                 
@@ -136,9 +180,7 @@ function createMobileCard(command, index) {
                 </div>
             </div>
             
-            <div class="details-content" 
-                 id="${uniqueId}"
-                 style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;">
+            <div id="${detailsId}" style="display: none;">
                 <div class="px-3 pb-3 border-t border-gray-100">
                     <div class="pt-3 space-y-3">
                         <div>
@@ -170,63 +212,84 @@ function createMobileCard(command, index) {
     `;
 }
 
-// 個別開閉のイベントハンドラー（インラインスタイル使用）
-function setupToggleHandlers() {
-    document.removeEventListener('click', handleToggleClick);
-    document.addEventListener('click', handleToggleClick);
-}
-
-function handleToggleClick(e) {
-    const toggleBtn = e.target.closest('.toggle-btn');
-    if (!toggleBtn) return;
+// 個別のトグル機能を設定（直接イベントリスナー）
+function setupIndividualToggle(buttonId, detailsId, iconId) {
+    const button = document.getElementById(buttonId);
+    const details = document.getElementById(detailsId);
+    const icon = document.getElementById(iconId);
     
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const targetId = toggleBtn.getAttribute('data-target');
-    const details = document.getElementById(targetId);
-    const icon = toggleBtn.querySelector('.toggle-icon');
-    
-    if (details && icon) {
-        // 現在の状態を取得
-        const isExpanded = details.style.maxHeight && details.style.maxHeight !== '0px';
+    if (button && details && icon) {
+        // 既存のリスナーを削除
+        button.onclick = null;
         
-        if (isExpanded) {
-            // 折りたたみ
-            details.style.maxHeight = '0px';
-            details.style.transition = 'max-height 0.3s ease-out';
-            icon.classList.remove('rotate-180');
-        } else {
-            // 展開
-            details.style.maxHeight = '2000px';
-            details.style.transition = 'max-height 0.5s ease-in';
-            icon.classList.add('rotate-180');
-        }
+        // 新しいリスナーを追加
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const isVisible = details.style.display !== 'none';
+            
+            if (isVisible) {
+                // 折りたたみ
+                animateCollapse(details);
+                icon.classList.remove('rotate-180');
+                console.log('Collapsed:', detailsId);
+            } else {
+                // 展開
+                animateExpand(details);
+                icon.classList.add('rotate-180');
+                console.log('Expanded:', detailsId);
+            }
+        });
         
-        console.log('Toggle executed for:', targetId, 'Expanded:', !isExpanded);
+        console.log('Toggle handler set for:', buttonId, detailsId, iconId);
     } else {
-        console.error('Toggle elements not found:', targetId);
+        console.error('Elements not found:', buttonId, detailsId, iconId);
     }
 }
 
-// 全体展開/折りたたみ機能（インラインスタイル版）
+// 全体展開/折りたたみ機能
 function expandAllDetails() {
-    document.querySelectorAll('.details-content').forEach(details => {
-        details.style.maxHeight = '2000px';
-        details.style.transition = 'max-height 0.5s ease-in';
+    // デスクトップ
+    allCommands.forEach((_, index) => {
+        const details = document.getElementById(`desktop-details-${index}`);
+        const icon = document.getElementById(`desktop-icon-${index}`);
+        if (details && details.style.display === 'none') {
+            animateExpand(details);
+            if (icon) icon.classList.add('rotate-180');
+        }
     });
-    document.querySelectorAll('.toggle-icon').forEach(icon => {
-        icon.classList.add('rotate-180');
+    
+    // モバイル
+    allCommands.forEach((_, index) => {
+        const details = document.getElementById(`mobile-details-${index}`);
+        const icon = document.getElementById(`mobile-icon-${index}`);
+        if (details && details.style.display === 'none') {
+            animateExpand(details);
+            if (icon) icon.classList.add('rotate-180');
+        }
     });
 }
 
 function collapseAllDetails() {
-    document.querySelectorAll('.details-content').forEach(details => {
-        details.style.maxHeight = '0px';
-        details.style.transition = 'max-height 0.3s ease-out';
+    // デスクトップ
+    allCommands.forEach((_, index) => {
+        const details = document.getElementById(`desktop-details-${index}`);
+        const icon = document.getElementById(`desktop-icon-${index}`);
+        if (details && details.style.display !== 'none') {
+            animateCollapse(details);
+            if (icon) icon.classList.remove('rotate-180');
+        }
     });
-    document.querySelectorAll('.toggle-icon').forEach(icon => {
-        icon.classList.remove('rotate-180');
+    
+    // モバイル
+    allCommands.forEach((_, index) => {
+        const details = document.getElementById(`mobile-details-${index}`);
+        const icon = document.getElementById(`mobile-icon-${index}`);
+        if (details && details.style.display !== 'none') {
+            animateCollapse(details);
+            if (icon) icon.classList.remove('rotate-180');
+        }
     });
 }
 
@@ -365,22 +428,21 @@ async function loadCommands() {
         
         createFilterButtons();
         
-        // カード生成（少し時間をずらしてユニークIDを確保）
-        const desktopCards = allCommands.map((command, index) => {
-            return createDesktopCard(command, index);
-        }).join('');
+        // カード生成
+        const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
         commandsContainer.innerHTML = desktopCards;
         
-        // モバイル版は少し遅らせる
-        setTimeout(() => {
-            const mobileCards = allCommands.map((command, index) => {
-                return createMobileCard(command, index);
-            }).join('');
-            commandsContainerMobile.innerHTML = mobileCards;
-        }, 10);
+        const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
+        commandsContainerMobile.innerHTML = mobileCards;
         
-        // イベントハンドラー設定
-        setupToggleHandlers();
+        // 各カードに個別のイベントハンドラーを設定
+        allCommands.forEach((command, index) => {
+            // デスクトップ版
+            setupIndividualToggle(`desktop-btn-${index}`, `desktop-details-${index}`, `desktop-icon-${index}`);
+            
+            // モバイル版
+            setupIndividualToggle(`mobile-btn-${index}`, `mobile-details-${index}`, `mobile-icon-${index}`);
+        });
         
         commandCount.textContent = `全 ${allCommands.length} コマンド`;
         console.log('コマンドが正常に読み込まれました:', allCommands.length);
