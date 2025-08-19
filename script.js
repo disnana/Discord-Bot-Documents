@@ -1,39 +1,10 @@
 // Disnana Command Reference Script
 
-// カテゴリ設定
-const categoryConfig = {
-    "basic": { 
-        color: "blue", 
-        icon: "fas fa-info-circle", 
-        name: "基本", 
-        bgColor: "bg-blue-50", 
-        textColor: "text-blue-600", 
-        borderColor: "border-blue-200" 
-    },
-    "test": { 
-        color: "green", 
-        icon: "fas fa-vial", 
-        name: "テスト", 
-        bgColor: "bg-green-50", 
-        textColor: "text-green-600", 
-        borderColor: "border-green-200" 
-    },
-    "management": { 
-        color: "red", 
-        icon: "fas fa-cogs", 
-        name: "管理", 
-        bgColor: "bg-red-50", 
-        textColor: "text-red-600", 
-        borderColor: "border-red-200" 
-    }
-};
-
-// DOM要素
+// グローバル変数
+let categoryConfig = {};
 let commandsContainer, commandsContainerMobile, loadingMessage, noResults;
 let searchInput, commandCount, filterButtons;
 let nameSearchBtn, fullSearchBtn, expandAllBtn, collapseAllBtn;
-
-// 状態変数
 let searchMode = 'name';
 let allCommands = [];
 let searchTimeout = null;
@@ -53,19 +24,26 @@ function initializeElements() {
     collapseAllBtn = document.getElementById('collapseAllBtn');
 }
 
-// デスクトップ用カード作成（一意ID付き）
+// ユニークなIDを生成
+function generateUniqueId(prefix, command, type, index) {
+    return `${prefix}-${command.replace(/[^a-zA-Z0-9]/g, '_')}-${type}-${index}-${Date.now()}`;
+}
+
+// デスクトップ用カード作成
 function createDesktopCard(command, index) {
     const config = categoryConfig[command.category];
-    const cardId = `card-desktop-${command.name}-${index}`;
-    const detailsId = `details-desktop-${command.name}-${index}`;
-    const iconId = `icon-desktop-${command.name}-${index}`;
+    if (!config) return '';
+    
+    const cardId = generateUniqueId('card-desktop', command.name, 'main', index);
+    const detailsId = generateUniqueId('details-desktop', command.name, 'content', index);
+    const iconId = generateUniqueId('icon-desktop', command.name, 'toggle', index);
+    const buttonId = generateUniqueId('button-desktop', command.name, 'toggle', index);
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg" 
              data-category="${command.category}" 
              data-command="${command.name}"
              id="${cardId}">
-            <!-- Header -->
             <div class="p-4 border-b border-gray-100">
                 <div class="flex items-start justify-between">
                     <div class="flex items-center">
@@ -79,16 +57,14 @@ function createDesktopCard(command, index) {
                             </span>
                         </div>
                     </div>
-                    <button class="toggle-details text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            data-target="${detailsId}"
-                            data-icon="${iconId}">
+                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                            id="${buttonId}">
                         <i class="fas fa-chevron-down text-sm transform transition-transform duration-200" id="${iconId}"></i>
                     </button>
                 </div>
                 
                 <p class="text-gray-700 mt-3 mb-2">${command.description}</p>
                 
-                <!-- Quick Info -->
                 <div class="flex flex-wrap gap-3 text-xs text-gray-500">
                     <span><i class="fas fa-terminal mr-1"></i>${command.usage}</span>
                     <span><i class="fas fa-shield-alt mr-1"></i>${command.permissions}</span>
@@ -96,10 +72,8 @@ function createDesktopCard(command, index) {
                 </div>
             </div>
             
-            <!-- Expandable Details -->
             <div class="details-content" id="${detailsId}">
                 <div class="p-4 space-y-4">
-                    <!-- Usage Examples -->
                     <div>
                         <h4 class="font-semibold text-gray-900 mb-2 text-sm">使用例</h4>
                         <div class="space-y-2">
@@ -131,19 +105,21 @@ function createDesktopCard(command, index) {
     `;
 }
 
-// モバイル用カード作成（一意ID付き）
+// モバイル用カード作成
 function createMobileCard(command, index) {
     const config = categoryConfig[command.category];
-    const cardId = `card-mobile-${command.name}-${index}`;
-    const detailsId = `details-mobile-${command.name}-${index}`;
-    const iconId = `icon-mobile-${command.name}-${index}`;
+    if (!config) return '';
+    
+    const cardId = generateUniqueId('card-mobile', command.name, 'main', index);
+    const detailsId = generateUniqueId('details-mobile', command.name, 'content', index);
+    const iconId = generateUniqueId('icon-mobile', command.name, 'toggle', index);
+    const buttonId = generateUniqueId('button-mobile', command.name, 'toggle', index);
     
     return `
         <div class="command-card bg-white rounded-lg shadow-md border border-gray-200" 
              data-category="${command.category}" 
              data-command="${command.name}"
              id="${cardId}">
-            <!-- Compact Header -->
             <div class="p-3">
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center">
@@ -157,27 +133,23 @@ function createMobileCard(command, index) {
                             </span>
                         </div>
                     </div>
-                    <button class="toggle-details text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
-                            data-target="${detailsId}"
-                            data-icon="${iconId}">
+                    <button class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
+                            id="${buttonId}">
                         <i class="fas fa-chevron-down text-xs transform transition-transform duration-200" id="${iconId}"></i>
                     </button>
                 </div>
                 
                 <p class="text-gray-700 text-sm mb-2">${command.description}</p>
                 
-                <!-- Basic Info -->
                 <div class="text-xs text-gray-500 space-y-1">
                     <div><i class="fas fa-terminal mr-1 w-3"></i>${command.usage}</div>
                     <div><i class="fas fa-shield-alt mr-1 w-3"></i>${command.permissions}</div>
                 </div>
             </div>
             
-            <!-- Expandable Details -->
             <div class="details-content" id="${detailsId}">
                 <div class="px-3 pb-3 border-t border-gray-100">
                     <div class="pt-3 space-y-3">
-                        <!-- Examples -->
                         <div>
                             <h4 class="font-semibold text-gray-900 mb-1 text-sm">使用例</h4>
                             <div class="space-y-1">
@@ -207,31 +179,20 @@ function createMobileCard(command, index) {
     `;
 }
 
-// 個別カードの詳細表示切り替え（完全に個別化）
-function setupToggleHandlers() {
-    // 全てのトグルボタンに個別のイベントリスナーを設定
-    document.querySelectorAll('.toggle-details').forEach(button => {
-        // 既存のリスナーを削除
-        button.removeEventListener('click', handleIndividualToggle);
-        // 新しいリスナーを追加
-        button.addEventListener('click', handleIndividualToggle);
-    });
-}
-
-function handleIndividualToggle(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const button = e.currentTarget;
-    const detailsId = button.getAttribute('data-target');
-    const iconId = button.getAttribute('data-icon');
-    
+// 個別のトグル機能を設定
+function setupIndividualToggle(buttonId, detailsId, iconId) {
+    const button = document.getElementById(buttonId);
     const details = document.getElementById(detailsId);
     const icon = document.getElementById(iconId);
     
-    if (details && icon) {
-        details.classList.toggle('expanded');
-        icon.classList.toggle('rotate-180');
+    if (button && details && icon) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            details.classList.toggle('expanded');
+            icon.classList.toggle('rotate-180');
+        });
     }
 }
 
@@ -240,7 +201,7 @@ function expandAllDetails() {
     document.querySelectorAll('.details-content').forEach(details => {
         details.classList.add('expanded');
     });
-    document.querySelectorAll('.toggle-details i').forEach(icon => {
+    document.querySelectorAll('[id^="icon-"] i, [id^="icon-"]').forEach(icon => {
         icon.classList.add('rotate-180');
     });
 }
@@ -249,7 +210,7 @@ function collapseAllDetails() {
     document.querySelectorAll('.details-content').forEach(details => {
         details.classList.remove('expanded');
     });
-    document.querySelectorAll('.toggle-details i').forEach(icon => {
+    document.querySelectorAll('[id^="icon-"] i, [id^="icon-"]').forEach(icon => {
         icon.classList.remove('rotate-180');
     });
 }
@@ -260,11 +221,13 @@ function createFilterButtons() {
     
     categories.forEach(category => {
         const config = categoryConfig[category];
-        const button = document.createElement('button');
-        button.className = 'filter-btn bg-gray-200 text-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:bg-gray-300';
-        button.innerHTML = `<i class="${config.icon} mr-1 sm:mr-2"></i>${config.name}`;
-        button.onclick = () => filterCommands(category);
-        filterButtons.appendChild(button);
+        if (config) {
+            const button = document.createElement('button');
+            button.className = 'filter-btn bg-gray-200 text-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:bg-gray-300';
+            button.innerHTML = `<i class="${config.icon} mr-1 sm:mr-2"></i>${config.name}`;
+            button.onclick = () => filterCommands(category);
+            filterButtons.appendChild(button);
+        }
     });
 }
 
@@ -359,7 +322,11 @@ async function loadCommandsData() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        return data.commands;
+        
+        // カテゴリ設定を動的に読み込み
+        categoryConfig = data.categories || {};
+        
+        return data.commands || [];
     } catch (error) {
         console.error('コマンドデータの読み込みに失敗しました:', error);
         
@@ -385,18 +352,31 @@ async function loadCommands() {
         
         createFilterButtons();
         
-        // indexを渡して完全にユニークなIDを生成
+        // カード生成
         const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
         commandsContainer.innerHTML = desktopCards;
         
         const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
         commandsContainerMobile.innerHTML = mobileCards;
         
-        // カード生成後にイベントハンドラーを設定
-        setupToggleHandlers();
-        commandCount.textContent = `全 ${allCommands.length} コマンド`;
+        // 各カードに個別のイベントハンドラーを設定
+        allCommands.forEach((command, index) => {
+            // デスクトップ版
+            const desktopButtonId = generateUniqueId('button-desktop', command.name, 'toggle', index);
+            const desktopDetailsId = generateUniqueId('details-desktop', command.name, 'content', index);
+            const desktopIconId = generateUniqueId('icon-desktop', command.name, 'toggle', index);
+            setupIndividualToggle(desktopButtonId, desktopDetailsId, desktopIconId);
+            
+            // モバイル版
+            const mobileButtonId = generateUniqueId('button-mobile', command.name, 'toggle', index);
+            const mobileDetailsId = generateUniqueId('details-mobile', command.name, 'content', index);
+            const mobileIconId = generateUniqueId('icon-mobile', command.name, 'toggle', index);
+            setupIndividualToggle(mobileButtonId, mobileDetailsId, mobileIconId);
+        });
         
+        commandCount.textContent = `全 ${allCommands.length} コマンド`;
         console.log('コマンドが正常に読み込まれました:', allCommands.length);
+        console.log('利用可能なカテゴリ:', Object.keys(categoryConfig));
     } catch (error) {
         console.error('コマンドの読み込み処理でエラーが発生しました:', error);
     }
@@ -404,18 +384,12 @@ async function loadCommands() {
 
 // イベントリスナー設定
 function setupEventListeners() {
-    // 検索モード切り替え
     nameSearchBtn.addEventListener('click', () => toggleSearchMode('name'));
     fullSearchBtn.addEventListener('click', () => toggleSearchMode('full'));
-    
-    // 検索
     searchInput.addEventListener('input', debouncedSearch);
-    
-    // 全体展開/折りたたみ
     expandAllBtn.addEventListener('click', expandAllDetails);
     collapseAllBtn.addEventListener('click', collapseAllDetails);
     
-    // トップに戻る
     const backToTopBtn = document.getElementById('backToTop');
     window.addEventListener('scroll', () => {
         if (window.pageYOffset > 300) {
