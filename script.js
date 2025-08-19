@@ -219,12 +219,25 @@ function createIndependentToggle(detailsId, iconId) {
 // ========== フィルタ + 検索統合機能 ==========
 function applyFilterAndSearch() {
     const elements = getElements();
-    const searchTerm = elements.searchInput.value.toLowerCase();
+    const searchTerm = elements.searchInput.value.toLowerCase().trim();
     const commandWrappers = document.querySelectorAll('.command-card-wrapper');
     let visibleCards = 0;
 
-    commandWrappers.forEach(wrapper => {
+    console.log('フィルタ適用開始:', {
+        currentFilter: currentFilter,
+        searchTerm: searchTerm,
+        searchMode: searchMode,
+        totalCards: commandWrappers.length
+    });
+
+    commandWrappers.forEach((wrapper, index) => {
         const card = wrapper.querySelector('.command-card');
+        if (!card) {
+            console.warn('カードが見つかりません:', wrapper);
+            wrapper.style.display = 'none';
+            return;
+        }
+
         const commandName = card.dataset.command.toLowerCase();
         const commandCategory = card.dataset.category;
         
@@ -242,28 +255,43 @@ function applyFilterAndSearch() {
             }
         }
         
-        // ステップ3: 両方の条件を満たす場合のみ表示
-        if (passesFilter && passesSearch) {
+        // ステップ3: 表示/非表示の決定
+        const shouldShow = passesFilter && passesSearch;
+        
+        if (shouldShow) {
             wrapper.style.display = 'block';
             visibleCards++;
         } else {
             wrapper.style.display = 'none';
         }
+        
+        // デバッグログ（最初の数件のみ）
+        if (index < 3) {
+            console.log(`カード ${index}:`, {
+                name: commandName,
+                category: commandCategory,
+                passesFilter: passesFilter,
+                passesSearch: passesSearch,
+                shouldShow: shouldShow
+            });
+        }
     });
 
     elements.noResults.style.display = visibleCards === 0 ? 'block' : 'none';
     
-    // 現在の状態をコンソールに表示
-    console.log('Filter applied:', {
-        filter: currentFilter,
-        search: searchTerm,
-        searchMode: searchMode,
-        visible: visibleCards
+    console.log('フィルタ適用完了:', {
+        visibleCards: visibleCards,
+        totalCards: commandWrappers.length
     });
 }
-
 // ========== 検索機能（統合版） ==========
 function performSearch() {
+    console.log('検索実行:', {
+        searchTerm: getElements().searchInput.value,
+        currentFilter: currentFilter,
+        searchMode: searchMode
+    });
+    
     applyFilterAndSearch();
 }
 
@@ -273,30 +301,34 @@ function debouncedSearch() {
 }
 
 // ========== フィルタ機能（統合版） ==========
-function filterCommands(category) {
+function filterCommands(category, clickedButton) {
     const elements = getElements();
     
     // 現在のフィルタ状態を更新
     currentFilter = category;
     
-    // ボタンの見た目を更新
+    // 全てのボタンをリセット
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('bg-discord', 'text-white');
         btn.classList.add('bg-gray-200', 'text-gray-700');
     });
     
-    event.target.classList.remove('bg-gray-200', 'text-gray-700');
-    event.target.classList.add('bg-discord', 'text-white');
+    // クリックされたボタンのみをアクティブ化
+    if (clickedButton) {
+        clickedButton.classList.remove('bg-gray-200', 'text-gray-700');
+        clickedButton.classList.add('bg-discord', 'text-white');
+    }
 
     // 統合フィルタ+検索を適用
     applyFilterAndSearch();
     
-    console.log('Category filter changed to:', category);
+    console.log('フィルタ変更:', category, 'ボタン:', clickedButton);
 }
 
 // ========== 検索モード切り替え（統合版） ==========
 function toggleSearchMode(mode) {
     const elements = getElements();
+    const previousMode = searchMode;
     searchMode = mode;
     
     if (mode === 'name') {
@@ -313,8 +345,10 @@ function toggleSearchMode(mode) {
         elements.searchInput.placeholder = '全文検索...';
     }
     
+    console.log('検索モード変更:', previousMode, '->', mode);
+    
     // 検索モード変更時も再検索を実行
-    if (elements.searchInput.value) {
+    if (elements.searchInput.value.trim()) {
         applyFilterAndSearch();
     }
 }
@@ -432,14 +466,25 @@ function createFilterButtons() {
     const elements = getElements();
     const categories = [...new Set(allCommands.map(cmd => cmd.category))];
     
+    // 既存のボタンを削除してから作成
+    elements.filterButtons.innerHTML = '';
+    
     categories.forEach(category => {
         const config = categoryConfig[category];
         if (config) {
             const button = document.createElement('button');
             button.className = 'filter-btn bg-gray-200 text-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:bg-gray-300';
-            button.innerHTML = `<i class="${config.icon} mr-1 sm:mr-2"></i>${config.name}`;
-            button.onclick = () => filterCommands(category);
-            filterButtons.appendChild(button);
+            
+            // アイコンを明確に設定
+            button.innerHTML = `<i class="${config.icon} mr-1 sm:mr-2" data-category="${category}"></i>${config.name}`;
+            button.setAttribute('data-category', category);
+            button.onclick = (e) => {
+                e.preventDefault();
+                filterCommands(category, button);
+            };
+            
+            elements.filterButtons.appendChild(button);
+            console.log(`フィルタボタン作成: ${category} - ${config.icon}`);
         }
     });
 }
