@@ -421,6 +421,8 @@ function collapseAllDetails() {
 }
 
 // ========== 読み込み（統合版） ==========
+
+// ========== 読み込み（「全て」ボタン対応版） ==========
 async function loadCommands() {
     const elements = getElements();
     
@@ -439,17 +441,24 @@ async function loadCommands() {
         const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
         elements.commandsContainerMobile.innerHTML = mobileCards;
         
-        // フィルタボタンを作成（アイコン修正版）
+        // フィルタボタンを作成（「全て」ボタン付き）
         createFilterButtons();
+        
+        // 初期フィルタ状態を設定
+        setInitialFilterState();
         
         // トグル機能を設定
         setupToggleHandlers();
         
         elements.commandCount.textContent = `全 ${allCommands.length} コマンド`;
-        console.log('修正版でコマンド読み込み完了:', allCommands.length);
+        console.log('「全て」ボタン対応版でコマンド読み込み完了:', allCommands.length);
+        
+        // 初期表示を確実に実行
+        applyFilterAndSearch();
         
         // デバッグ関数をグローバルに設定
         window.debugCurrentState = debugCurrentState;
+        window.resetFiltersAndSearch = resetFiltersAndSearch;
         
     } catch (error) {
         console.error('エラー:', error);
@@ -495,6 +504,7 @@ async function loadCommandsData() {
     }
 }
 
+// ========== フィルターボタン作成（「全て」ボタン追加版） ==========
 function createFilterButtons() {
     const elements = getElements();
     const categories = [...new Set(allCommands.map(cmd => cmd.category))];
@@ -502,6 +512,19 @@ function createFilterButtons() {
     // 既存のボタンを削除してから作成
     elements.filterButtons.innerHTML = '';
     
+    // まず「全て」ボタンを作成
+    const allButton = document.createElement('button');
+    allButton.className = 'filter-btn bg-discord text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors';
+    allButton.innerHTML = '<i class="fas fa-list mr-1 sm:mr-2"></i>全て';
+    allButton.setAttribute('data-category', 'all');
+    allButton.onclick = (e) => {
+        e.preventDefault();
+        filterCommands('all', allButton);
+    };
+    elements.filterButtons.appendChild(allButton);
+    console.log('「全て」フィルタボタン作成');
+    
+    // 各カテゴリのボタンを作成
     categories.forEach(category => {
         const config = categoryConfig[category];
         if (config) {
@@ -571,7 +594,7 @@ function setupSearchInputListener() {
     });
 }
 
-// ========== デバッグ関数（強化版） ==========
+// ========== デバッグ関数（「全て」ボタン確認版） ==========
 function debugCurrentState() {
     const elements = getElements();
     const searchTerm = elements.searchInput.value;
@@ -583,6 +606,14 @@ function debugCurrentState() {
     console.log('検索語は空:', searchTerm.trim().length === 0);
     console.log('検索モード:', searchMode);
     
+    // フィルタボタンの状態確認
+    const allButton = document.querySelector('.filter-btn[data-category="all"]');
+    const activeButton = document.querySelector('.filter-btn.bg-discord');
+    
+    console.log('「全て」ボタン存在:', !!allButton);
+    console.log('「全て」ボタンアクティブ:', allButton && allButton.classList.contains('bg-discord'));
+    console.log('アクティブなフィルタボタン:', activeButton ? activeButton.textContent.trim() : 'なし');
+    
     const wrappers = document.querySelectorAll('.command-card-wrapper');
     const visible = Array.from(wrappers).filter(w => w.style.display !== 'none');
     const hidden = Array.from(wrappers).filter(w => w.style.display === 'none');
@@ -592,7 +623,7 @@ function debugCurrentState() {
     console.log('非表示のカード:', hidden.length);
     
     // 表示中のカードの詳細
-    if (visible.length > 0) {
+    if (visible.length > 0 && visible.length <= 10) {
         console.log('表示中のカード一覧:');
         visible.forEach(wrapper => {
             const card = wrapper.querySelector('.command-card');
@@ -601,10 +632,6 @@ function debugCurrentState() {
             }
         });
     }
-    
-    // カテゴリボタンの状態確認
-    const activeButton = document.querySelector('.filter-btn.bg-discord');
-    console.log('アクティブなフィルタボタン:', activeButton ? activeButton.textContent.trim() : 'なし');
 }
 
 // F12コンソールで debugCurrentState() を実行してデバッグ可能
@@ -622,9 +649,10 @@ function resetFiltersAndSearch() {
     // フィルタを「全て」に戻す
     currentFilter = 'all';
     
-    // ボタンの状態をリセット
+    // 「全て」ボタンをアクティブにし、他のボタンを非アクティブにする
     document.querySelectorAll('.filter-btn').forEach(btn => {
-        if (btn.textContent.trim().includes('全て')) {
+        const category = btn.getAttribute('data-category');
+        if (category === 'all') {
             btn.classList.add('bg-discord', 'text-white');
             btn.classList.remove('bg-gray-200', 'text-gray-700');
         } else {
@@ -635,6 +663,22 @@ function resetFiltersAndSearch() {
     
     // 表示を更新
     applyFilterAndSearch();
+    
+    console.log('リセット完了 - 全てのコマンドが表示されるはずです');
+}
+
+// ========== 初期フィルタ状態の設定 ==========
+function setInitialFilterState() {
+    // 初期状態では「全て」を選択状態にする
+    currentFilter = 'all';
+    
+    const allButton = document.querySelector('.filter-btn[data-category="all"]');
+    if (allButton) {
+        allButton.classList.add('bg-discord', 'text-white');
+        allButton.classList.remove('bg-gray-200', 'text-gray-700');
+    }
+    
+    console.log('初期フィルタ状態設定: 全て');
 }
 
 // ========== 初期化（デバッグ機能付き） ==========
