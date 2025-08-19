@@ -1,4 +1,4 @@
-/* Custom Styles for Disnana Command Reference - Minimal Version */
+/* Custom Styles for Disnana Command Reference - Grid Independence */
 
 .command-card {
     transition: all 0.3s ease;
@@ -8,7 +8,21 @@
     transform: translateY(-2px);
 }
 
-/* 個別のdetails要素用のスタイル - クラス名を使わない */
+/* 高さ独立の2列グリッド */
+.desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+    align-items: start; /* 重要: 上揃えで高さを独立 */
+}
+
+/* 各カードを完全に独立させる */
+.command-card-wrapper {
+    height: auto;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
 
 /* ローディングアニメーション */
 @keyframes fadeIn {
@@ -51,7 +65,13 @@ button:focus {
     outline-offset: 2px;
 }
 
-/* 小さな画面でのテキスト調整 */
+/* レスポンシブ調整 */
+@media (max-width: 1024px) {
+    .desktop-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 640px) {
     .command-card {
         font-size: 0.9rem;
