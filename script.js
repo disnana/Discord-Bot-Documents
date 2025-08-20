@@ -594,8 +594,359 @@ function setInitialFilterState() {
     }
 }
 
-// ========== 初期化（デバッグ機能付き） ==========
+// ========== URL状態管理機能 ==========
+
+// URLパラメータから状態を読み取る
+function getStateFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    return {
+        search: urlParams.get('search') || '',
+        category: urlParams.get('category') || 'all',
+        mode: urlParams.get('mode') || 'name',
+        command: urlParams.get('command') || '',
+        expanded: urlParams.get('expanded') === 'true'
+    };
+}
+
+// 現在の状態をURLに反映
+function updateURL(state, replaceState = false) {
+    const urlParams = new URLSearchParams();
+    
+    // 検索ワードがある場合のみ追加
+    if (state.search && state.search.trim()) {
+        urlParams.set('search', state.search.trim());
+    }
+    
+    // カテゴリが「全て」以外の場合のみ追加
+    if (state.category && state.category !== 'all') {
+        urlParams.set('category', state.category);
+    }
+    
+    // 検索モードがデフォルト以外の場合のみ追加
+    if (state.mode && state.mode !== 'name') {
+        urlParams.set('mode', state.mode);
+    }
+    
+    // 特定コマンドが指定されている場合
+    if (state.command && state.command.trim()) {
+        urlParams.set('command', state.command.trim());
+    }
+    
+    // 全展開状態の場合
+    if (state.expanded) {
+        urlParams.set('expanded', 'true');
+    }
+    
+    // URLを構築
+    const newURL = urlParams.toString() ? 
+        `${window.location.pathname}?${urlParams.toString()}` : 
+        window.location.pathname;
+    
+    // URL更新
+    if (replaceState) {
+        window.history.replaceState(null, '', newURL);
+    } else {
+        window.history.pushState(null, '', newURL);
+    }
+    
+    console.log('URL更新:', newURL);
+}
+
+// URLから状態を復元
+function restoreStateFromURL() {
+    const state = getStateFromURL();
+    const elements = getElements();
+    
+    console.log('URL状態復元:', state);
+    
+    // 検索ワードを復元
+    if (state.search) {
+        elements.searchInput.value = state.search;
+    }
+    
+    // 検索モードを復元
+    if (state.mode !== searchMode) {
+        toggleSearchMode(state.mode);
+    }
+    
+    // カテゴリフィルタを復元
+    if (state.category !== currentFilter) {
+        // 対応するボタンを見つけてクリック
+        const targetButton = document.querySelector(`.filter-btn[data-category="${state.category}"]`);
+        if (targetButton) {
+            filterCommands(state.category, targetButton);
+        }
+    }
+    
+    // 特定コマンドを開く
+    if (state.command) {
+        setTimeout(() => {
+            highlightAndOpenCommand(state.command);
+        }, 500); // カード生成後に実行
+    }
+    
+    // 全展開状態を復元
+    if (state.expanded) {
+        setTimeout(() => {
+            expandAllDetails();
+        }, 600);
+    }
+    
+    // 検索とフィルタを適用
+    if (state.search || state.category !== 'all') {
+        setTimeout(() => {
+            applyFilterAndSearch();
+        }, 300);
+    }
+}
+
+// 特定コマンドをハイライトして開く
+function highlightAndOpenCommand(commandName) {
+    const commandCards = document.querySelectorAll('.command-card');
+    let targetCard = null;
+    let targetIndex = -1;
+    
+    commandCards.forEach((card, index) => {
+        if (card.dataset.command.toLowerCase() === commandName.toLowerCase()) {
+            targetCard = card;
+            targetIndex = Math.floor(index / 2); // デスクトップとモバイルで2倍
+        }
+    });
+    
+    if (targetCard && targetIndex >= 0) {
+        console.log('コマンドを開きます:', commandName);
+        
+        // 詳細を開く
+        const desktopDetails = document.getElementById(`desktop_details_${targetIndex}`);
+        const desktopIcon = document.getElementById(`desktop_icon_${targetIndex}`);
+        const mobileDetails = document.getElementById(`mobile_details_${targetIndex}`);
+        const mobileIcon = document.getElementById(`mobile_icon_${targetIndex}`);
+        
+        if (desktopDetails && desktopDetails.style.display === 'none') {
+            desktopDetails.style.display = 'block';
+            desktopDetails.style.opacity = '1';
+            if (desktopIcon) desktopIcon.style.transform = 'rotate(180deg)';
+        }
+        
+        if (mobileDetails && mobileDetails.style.display === 'none') {
+            mobileDetails.style.display = 'block';
+            mobileDetails.style.opacity = '1';
+            if (mobileIcon) mobileIcon.style.transform = 'rotate(180deg)';
+        }
+        
+        // カードをハイライト
+        targetCard.style.boxShadow = '0 0 0 3px #5865F2';
+        targetCard.style.borderColor = '#5865F2';
+        
+        // スムーズスクロール
+        setTimeout(() => {
+            targetCard.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }, 100);
+        
+        // 3秒後にハイライトを削除
+        setTimeout(() => {
+            targetCard.style.boxShadow = '';
+            targetCard.style.borderColor = '';
+        }, 3000);
+    }
+}
+
+// 現在の状態を取得
+function getCurrentState() {
+    const elements = getElements();
+    const expandedDetails = document.querySelectorAll('[id^="desktop_details_"][style*="display: block"], [id^="mobile_details_"][style*="display: block"]');
+    
+    return {
+        search: elements.searchInput.value.trim(),
+        category: currentFilter,
+        mode: searchMode,
+        command: '', // 特定コマンドは手動指定のみ
+        expanded: expandedDetails.length === allCommands.length * 2 // 全て展開されているか
+    };
+}
+
+// ========== 既存機能の拡張 ==========
+
+// 検索実行時にURL更新
+function performSearchWithURL() {
+    performSearch();
+    
+    // URL更新（debounce処理）
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const state = getCurrentState();
+        updateURL(state, true); // replaceStateを使用
+    }, 500);
+}
+
+// フィルタ変更時にURL更新
+function filterCommandsWithURL(category, clickedButton) {
+    filterCommands(category, clickedButton);
+    
+    // URL更新
+    const state = getCurrentState();
+    updateURL(state);
+}
+
+// 検索モード切り替え時にURL更新
+function toggleSearchModeWithURL(mode) {
+    toggleSearchMode(mode);
+    
+    // URL更新
+    const state = getCurrentState();
+    updateURL(state, true);
+}
+
+// 全展開/折りたたみ時にURL更新
+function expandAllDetailsWithURL() {
+    expandAllDetails();
+    
+    const state = getCurrentState();
+    updateURL(state, true);
+}
+
+function collapseAllDetailsWithURL() {
+    collapseAllDetails();
+    
+    const state = getCurrentState();
+    updateURL(state, true);
+}
+
+// ========== イベントリスナーの更新 ==========
+function setupEventListenersWithURL() {
+    const elements = getElements();
+    
+    // 検索モード切り替え
+    elements.nameSearchBtn.addEventListener('click', () => toggleSearchModeWithURL('name'));
+    elements.fullSearchBtn.addEventListener('click', () => toggleSearchModeWithURL('full'));
+    
+    // 検索入力（URL対応版）
+    elements.searchInput.addEventListener('input', performSearchWithURL);
+    
+    // Escapeキーでクリア
+    elements.searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            e.target.value = '';
+            performSearchWithURL();
+        }
+    });
+    
+    // 全体展開/折りたたみ
+    elements.expandAllBtn.addEventListener('click', expandAllDetailsWithURL);
+    elements.collapseAllBtn.addEventListener('click', collapseAllDetailsWithURL);
+    
+    // ブラウザの戻る/進むボタン対応
+    window.addEventListener('popstate', function(e) {
+        console.log('ブラウザ履歴変更検出');
+        restoreStateFromURL();
+    });
+    
+    // その他のイベント（変更なし）
+    const backToTopBtn = document.getElementById('backToTop');
+    window.addEventListener('scroll', () => {
+        if (window.pageYOffset > 300) {
+            backToTopBtn.classList.remove('opacity-0', 'pointer-events-none');
+        } else {
+            backToTopBtn.classList.add('opacity-0', 'pointer-events-none');
+        }
+    });
+    backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
+    console.log('URL対応イベントリスナー設定完了');
+}
+
+// ========== フィルタボタン作成（URL対応版） ==========
+function createFilterButtonsWithURL() {
+    const elements = getElements();
+    const categories = [...new Set(allCommands.map(cmd => cmd.category))];
+    
+    elements.filterButtons.innerHTML = '';
+    
+    // 「全て」ボタン
+    const allButton = document.createElement('button');
+    allButton.className = 'filter-btn bg-discord text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors';
+    allButton.innerHTML = '<i class="fas fa-list mr-1 sm:mr-2"></i>全て';
+    allButton.setAttribute('data-category', 'all');
+    allButton.onclick = (e) => {
+        e.preventDefault();
+        filterCommandsWithURL('all', allButton);
+    };
+    elements.filterButtons.appendChild(allButton);
+    
+    // カテゴリボタン
+    categories.forEach(category => {
+        const config = categoryConfig[category];
+        if (config) {
+            const button = document.createElement('button');
+            button.className = 'filter-btn bg-gray-200 text-gray-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:bg-gray-300';
+            button.innerHTML = `<i class="${config.icon} mr-1 sm:mr-2"></i>${config.name}`;
+            button.setAttribute('data-category', category);
+            button.onclick = (e) => {
+                e.preventDefault();
+                filterCommandsWithURL(category, button);
+            };
+            elements.filterButtons.appendChild(button);
+        }
+    });
+}
+
+// ========== 読み込み（URL対応版） ==========
+async function loadCommandsWithURL() {
+    const elements = getElements();
+    
+    try {
+        allCommands = await loadCommandsData();
+        
+        if (allCommands.length === 0) {
+            return;
+        }
+
+        elements.loadingMessage.style.display = 'none';
+        
+        const desktopCards = allCommands.map((command, index) => createDesktopCard(command, index)).join('');
+        elements.commandsContainer.innerHTML = desktopCards;
+        
+        const mobileCards = allCommands.map((command, index) => createMobileCard(command, index)).join('');
+        elements.commandsContainerMobile.innerHTML = mobileCards;
+        
+        // フィルタボタンを作成（URL対応版）
+        createFilterButtonsWithURL();
+        
+        // トグル機能を設定
+        setupToggleHandlers();
+        
+        elements.commandCount.textContent = `全 ${allCommands.length} コマンド`;
+        
+        // URL状態を復元
+        restoreStateFromURL();
+        
+        console.log('URL対応版でコマンド読み込み完了:', allCommands.length);
+        
+        // グローバル関数設定
+        window.debugCurrentState = debugCurrentState;
+        window.resetFiltersAndSearch = resetFiltersAndSearch;
+        window.updateURL = updateURL;
+        window.highlightAndOpenCommand = highlightAndOpenCommand;
+        
+    } catch (error) {
+        console.error('エラー:', error);
+    }
+}
+
+// ========== 初期化（URL対応版） ==========
 document.addEventListener('DOMContentLoaded', function() {
-    setupEventListeners();
-    loadCommands();
+    console.log('URL状態管理対応版 初期化開始...');
+    setupEventListenersWithURL();
+    loadCommandsWithURL();
+    
+    console.log('URL機能が利用可能です:');
+    console.log('  - 検索やフィルタの状態がURLに保存されます');
+    console.log('  - ブラウザの戻る/進むボタンが使用できます');
+    console.log('  - highlightAndOpenCommand("コマンド名") で特定コマンドを開けます');
 });
